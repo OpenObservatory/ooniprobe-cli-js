@@ -1,0 +1,51 @@
+  /*
+   *
+   * XXX Remember to do something with these options, either map them to the
+   * new ones and write DEPRECATION warning or have
+   *
+   * $ ooni
+   * be the new CLI
+   * and
+   *
+   * $ ooniprobe
+   *
+   * be a wrapper that maps old commands to new commands
+   ooniprobe [options] [path to test].py
+    Options:
+      -h, --help                Display this help and exit.
+      -n, --no-collector        Disable writing to collector
+      -N, --no-njson            Disable writing to disk
+      -g, --no-geoip            Disable geoip lookup on start. With this option your
+                                IP address can be disclosed in the report.
+      -s, --list                List the currently installed ooniprobe nettests
+      -v, --verbose             Show more verbose information
+      -w, --web-ui              Start the web UI
+      -z, --initialize          Initialize ooniprobe to begin running it
+          --info                Print system wide info and exit
+      -o, --reportfile=         Specify the report file name to write to.
+      -i, --testdeck=           Specify as input a test deck: a yaml file containing
+                                the tests to run and their arguments.
+      -c, --collector=          Specify the address of the collector for test
+                                results. In most cases a user will prefer to specify
+                                a bouncer over this.
+      -b, --bouncer=            Specify the bouncer used to obtain the address of
+                                the collector and test helpers.
+      -l, --logfile=            Write to this logs to this filename.
+      -O, --pcapfile=           Write a PCAP of the ooniprobe session to this
+                                filename.
+      -f, --configfile=         Specify a path to the ooniprobe configuration file.
+      -d, --datadir=            Specify a path to the ooniprobe data directory.
+      -a, --annotations=        Annotate the report with a key:value[, key:value]
+                                format.
+      -P, --preferred-backend=  Set the preferred backend to use when submitting
+                                results and/or communicating with test helpers. Can
+                                be either onion, https or cloudfront
+      -Q, --queue=              AMQP Queue URL
+                                amqp://user:pass@host:port/vhost/queue
+          --spew                Print an insanely verbose log of everything that
+                                happens.         Useful when debugging freezes or
+                                locks in complex code.
+          --version             Display the ooniprobe version and exit.
+  */
+
+

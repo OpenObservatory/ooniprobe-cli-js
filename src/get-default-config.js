@@ -27,7 +27,7 @@ const getDefaultConfig = async () => {
   }
 
   const oldOoniHomePath = path.join(homedir(), '.ooni')
-  const oldOoniHomeExists = await fs.pathExists(oldOoniHomePath)
+  const oldOoniHomeExists = await fs.pathExists(path.join(oldOoniHomePath, 'ooniprobe.conf'))
   if (oldOoniHomeExists === true) {
     // XXX do we also want to attempt to migrate the configuration over?
     // I would say no, as it's error prone and we may end up with an

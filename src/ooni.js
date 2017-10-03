@@ -141,7 +141,15 @@ const main = async (argv_) => {
   }
 
   if (!config._informed_consent) {
-    await doOnboarding(config)
+    config = await doOnboarding(config)
+    try {
+      writeToConfigFile(config)
+    } catch (err) {
+      console.error(error('An error occurred while writing ' +
+        `ooni config file in "${OONI_CONFIG_PATH}"` + err.message
+      ))
+      return 1
+    }
   }
 
   const ctx = {

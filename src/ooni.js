@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+import * as fs from 'fs-extra'
 import mri from 'mri'
 
 import { blue, bold } from 'chalk'
@@ -7,6 +7,18 @@ import { blue, bold } from 'chalk'
 import commands from './commands'
 import logo from './cli/output/logo'
 import error from './cli/output/error'
+import getDefaultConfig from './get-default-config'
+import doOnboarding from './do-onboarding'
+
+import { getOoniDir } from './config/global-path'
+import {
+  getConfigFilePath,
+  readConfigFile,
+  writeToConfigFile
+} from './config/config-files'
+
+const OONI_DIR = getOoniDir()
+const OONI_CONFIG_PATH = getConfigFilePath()
 
 /*
 commander
@@ -45,7 +57,7 @@ commander
   .description('Displays help for the specific command')
 */
 
-const main = (argv_) => {
+const main = async (argv_) => {
   const argv = mri(argv_, {
     boolean: ['help', 'version'],
     string: [],
@@ -62,6 +74,76 @@ const main = (argv_) => {
       return 0
     }
   }
+
+  // We do it now since we may have to perform a migration too
+  let config = await getDefaultConfig()
+
+  let ooniDirExists
+  try {
+    ooniDirExists = fs.existsSync(OONI_DIR)
+  } catch (err) {
+    console.error(error('An unexpected error occurred while trying to find the ' +
+      `ooni dir "${OONI_DIR}"` + err.message
+    ))
+  }
+
+  if (!ooniDirExists) {
+    try {
+      await fs.ensureDir(OONI_DIR)
+    } catch (err) {
+      console.error(error('An unexpected error occurred while creating the ' +
+        `ooni dir in "${OONI_DIR}"` + err.message
+      ))
+      return 1
+    }
+  }
+
+  let configExists
+  try {
+    configExists = fs.existsSync(OONI_CONFIG_PATH)
+  } catch (err) {
+    console.error(error('An unexpected error occurred while finding ' +
+      `ooni config in "${OONI_CONFIG_PATH}"` + err.message
+    ))
+    return 1
+  }
+
+  if (configExists) {
+    try {
+      config = readConfigFile()
+    } catch (err) {
+      console.error(error('An unexpected error occurred while reading ' +
+        `ooni config file in "${OONI_CONFIG_PATH}"` + err.message
+      ))
+      return 1
+    }
+    try {
+      config = JSON.parse(config)
+    } catch (err) {
+      console.error(error('An error occurred parsing ' +
+        `ooni config file in "${OONI_CONFIG_PATH}"` + err.message
+      ))
+      return 1
+    }
+  } else {
+    // If we are in here it either means we migrated (and therefore the config
+    // file doesn't exist) or we are a fresh install.
+    //
+    // In any case we should write the default config file.
+    try {
+      writeToConfigFile(config)
+    } catch (err) {
+      console.error(error('An error occurred while writing ' +
+        `ooni config file in "${OONI_CONFIG_PATH}"` + err.message
+      ))
+      return 1
+    }
+  }
+
+  if (!config._informed_consent) {
+    await doOnboarding(config)
+  }
+
   const ctx = {
     argv: argv_
   }

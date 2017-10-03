@@ -216,7 +216,7 @@ const main = async ctx => {
     } else {
       console.error(error(`Unknown error: ${err}\n${err.stack}`))
     }
-    exit(1)
+    await exit(1)
   }
 
 }

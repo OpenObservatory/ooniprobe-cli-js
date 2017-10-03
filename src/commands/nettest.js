@@ -1,62 +1,21 @@
 import mri from 'mri'
 import range from 'lodash.range'
 
-import chalk from 'chalk'
-import stringLength from 'string-length'
 import wrapAnsi from 'wrap-ansi'
-
+import chalk from 'chalk'
 import info from '../cli/output/info'
 import logo from '../cli/output/logo'
 import error from '../cli/output/error'
 import ok from '../cli/output/ok'
 import notok from '../cli/output/notok'
 import wait from '../cli/output/wait'
+import printOptions from '../cli/output/options'
 
 import exit from '../util/exit'
 import sleep from '../util/sleep'
 
 import camelCase from 'camelcase'
 
-
-const RIGHT_PADDING = 30
-
-const wrapAt = (s, n) => {
-}
-
-const rightPad = (s, n) => {
-  n -= stringLength(s)
-  return ' '.repeat(n > -1 ? n : 0)
-}
-
-const optionWithPadding = (opt) => {
-  /*
-   * We want the optionWithPadding to look like this:
-   * _____________________________________
-   * |  | <option flags> | <description> |
-   *   4  +   36      +         40          = 80
-   * */
-  const padding = rightPad(opt.option, 36)
-  return opt.option +
-          padding +
-          wrapAnsi(opt.description, 40).split('\n').map((line, idx) => {
-            // The first line already has padding
-            if (idx === 0) {
-              return line
-            }
-            // The other lines need to be padded of the starting 4 columns +
-            // the length of the flags + the padding given to the first line of
-            // the description
-            return padding + ' '.repeat(stringLength(opt.option) + 4) + line
-          }).join('\n')
-}
-
-const printOptions = (options) => {
-  console.log(`
-  ${chalk.dim('Options:')}
-
-    ${options.map((opt) => optionWithPadding(opt, 80)).join('\n    ')}
-`)
-}
 
 const printNettestHelp = (nettestName, options) => {
     console.log(`
@@ -162,7 +121,7 @@ const help = () => {
 
   ${chalk.dim('Nettests:')}
 
-    ${Object.keys(nettests).map((name) => `${name}  [options]  ${nettests[name].shortDescription}`)}
+    ${Object.keys(nettests).map((name) => `${name}  [options]  ${nettests[name].shortDescription}`).join('\n')}
 
   ${chalk.dim('Options:')}
 

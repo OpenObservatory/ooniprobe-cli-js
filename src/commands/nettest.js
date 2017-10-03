@@ -1,9 +1,9 @@
-import chalk from 'chalk'
 import mri from 'mri'
 import range from 'lodash.range'
 
-import exit from '../util/exit'
-import sleep from '../util/sleep'
+import chalk from 'chalk'
+import stringLength from 'string-length'
+import wrapAnsi from 'wrap-ansi'
 
 import info from '../cli/output/info'
 import logo from '../cli/output/logo'
@@ -12,7 +12,66 @@ import ok from '../cli/output/ok'
 import notok from '../cli/output/notok'
 import wait from '../cli/output/wait'
 
+import exit from '../util/exit'
+import sleep from '../util/sleep'
+
 import camelCase from 'camelcase'
+
+
+const RIGHT_PADDING = 30
+
+const wrapAt = (s, n) => {
+}
+
+const rightPad = (s, n) => {
+  n -= stringLength(s)
+  return ' '.repeat(n > -1 ? n : 0)
+}
+
+const optionWithPadding = (opt) => {
+  /*
+   * We want the optionWithPadding to look like this:
+   * _____________________________________
+   * |  | <option flags> | <description> |
+   *   4  +   36      +         40          = 80
+   * */
+  const padding = rightPad(opt.option, 36)
+  return opt.option +
+          padding +
+          wrapAnsi(opt.description, 40).split('\n').map((line, idx) => {
+            // The first line already has padding
+            if (idx === 0) {
+              return line
+            }
+            // The other lines need to be padded of the starting 4 columns +
+            // the length of the flags + the padding given to the first line of
+            // the description
+            return padding + ' '.repeat(stringLength(opt.option) + 4) + line
+          }).join('\n')
+}
+
+const printOptions = (options) => {
+  console.log(`
+  ${chalk.dim('Options:')}
+
+    ${options.map((opt) => optionWithPadding(opt, 80)).join('\n    ')}
+`)
+}
+
+const printNettestHelp = (nettestName, options) => {
+    console.log(`
+  ${chalk.blue(logo)} ${chalk.bold('OONI Probe')}
+
+  ${chalk.bold(nettests[nettestName].name)}
+
+  ${wrapAnsi(nettests[nettestName].shortDescription, 40)}
+
+  ${chalk.dim('Usage:')}
+
+    ooni nettest [options] ${nettestName} [options] <url>
+`)
+  printOptions(options)
+}
 
 class NettestRunner {
   /*
@@ -32,11 +91,19 @@ class NettestRunner {
 class HTTPHeaderFieldManipulationRunner extends NettestRunner {
   get name() { return 'HTTP Header Field Manipulation' }
   get shortDescription() { return 'Check for middle boxes' }
+  async run() {
+  }
 }
 
 class HTTPInvalidRequestLineRunner extends NettestRunner {
   get name() { return 'HTTP Invalid Request Line' }
   get shortDescription() { return 'Check for middle boxes' }
+
+  help() {
+  }
+
+  async run() {
+  }
 }
 
 class WebConnectivityRunner extends NettestRunner {
@@ -70,21 +137,16 @@ class WebConnectivityRunner extends NettestRunner {
   }
 
   help() {
-    console.log(`
-  ${chalk.blue(logo)} ${chalk.bold('OONI Probe')}
-
-  ${chalk.dim('Usage:')}
-
-    ooni nettest [options] <nettest> [options] <url>
-
-  ${chalk.dim('Nettests:')}
-
-  ${Object.keys(nettests).map((name) => `${name}  [options]  ${nettests[name].shortDescription}`)}
-
-  ${chalk.dim('Options:')}
-    -h, --help                          Display usage information
-    -f, --file ${chalk.bold.underline('FILE')},       The path to a list of websites to test
-      `)
+    printNettestHelp('webConnectivity', [
+      {
+        option: '-h, --help',
+        description: 'Display usage information'
+      },
+      {
+        option: `-f, --file ${chalk.bold.underline('FILE')}`,
+        description: 'The path to a list of websites to test'
+      }
+    ])
   }
 }
 
@@ -99,9 +161,11 @@ const help = () => {
   ${chalk.bold(chalk.blue(logo))} ooni nettest [options] <nettest> [options]
 
   ${chalk.dim('Nettests:')}
+
     ${Object.keys(nettests).map((name) => `${name}  [options]  ${nettests[name].shortDescription}`)}
 
   ${chalk.dim('Options:')}
+
     -h, --help                          Output usage information
     -o ${chalk.bold.underline('OUTPUT')},       Path to write report output to
   `)

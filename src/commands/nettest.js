@@ -69,7 +69,7 @@ class WebConnectivityRunner extends NettestRunner {
   get name() { return 'Web Connectivity' }
   get shortDescription() { return 'Test for web censorship' }
 
-  async run() {
+  async run(ctx) {
     let currentUrl
     if (argv.file) {
       // Handle testing input file
@@ -130,13 +130,13 @@ const help = () => {
   `)
 }
 
-const run = async ({nettest}) => {
+const run = async ({ctx, nettest}) => {
   if (nettest === undefined) {
     console.log(error(`Could not find nettest called ${name} (${camelName})`))
     return exit(1)
   }
   console.log(info(`Running ${chalk.bold(nettest.name)}`))
-  await nettest.run()
+  await nettest.run(ctx)
 }
 
 // Define these as module level variables so we don't have to pass them along
@@ -167,7 +167,7 @@ const main = async ctx => {
       nettest.help()
       await exit(0)
     } else {
-      await run({nettest})
+      await run({ctx, nettest})
     }
   } catch(err) {
     if (err.usageError) {
@@ -177,7 +177,6 @@ const main = async ctx => {
     }
     await exit(1)
   }
-
 }
 
 export default main

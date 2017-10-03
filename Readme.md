@@ -22,3 +22,18 @@ Edit files and run the CLI with:
 ```
 node dist/ooni.js
 ```
+
+## TODO
+
+*CLI related*
+
+* Ensure all CLI tools are using the `src/cli/ouput/options` utilities
+* Do something similar to what is done for options, for test names to make them wrap nicely (see: `ooni nt --help`)
+* Start mocking out all the remaining commands following the pattern used for
+  `nettest` and where necessary refactor things into `cli/ouput` utilities
+* Check that the help command works as expected everywhere
+
+*Core*
+
+* Integrate measurement-kit-node to run the tests
+* Add support for storing measurement results using something like level-db or similar

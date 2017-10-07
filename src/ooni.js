@@ -36,6 +36,10 @@ const main = async (argv_) => {
       console.log(require('../package').version)
       return 0
     }
+    else if (argv.help) {
+      console.log(require('./cli/output/help.js'))
+      return 0
+    }        
   }
 
   // We do it now since we may have to perform a migration too

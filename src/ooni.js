@@ -31,7 +31,8 @@ const main = async (argv_) => {
   })
 
   let subcommand = argv._[2]
-  if (!subcommand) {
+
+  if (!subcommand) {    
     if (argv.version) {
       console.log(require('../package').version)
       return 0
@@ -123,9 +124,13 @@ const main = async (argv_) => {
     argv: argv_
   }
 
-  if (subcommand === 'help') {
+  if (subcommand === 'help' && argv._[3]) {
     subcommand = argv._[3]
     ctx.argv.push('-h')
+  }
+  else if (subcommand === 'help' && !argv._[3]){
+  console.log(require('./cli/output/help.js'))
+      return 0
   }
 
   switch(subcommand) {

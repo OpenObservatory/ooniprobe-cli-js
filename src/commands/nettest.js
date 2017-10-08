@@ -152,14 +152,15 @@ const main = async ctx => {
 
   argv._ = argv._.slice(1)
   subcommand = argv._[0]
-
-  if (!subcommand) {
+  if (subcommand === 'nettest' && argv.help && argv._[1]) {
+    subcommand = argv._[1]
+  }  
+  else if (!subcommand || (argv.help && argv._[0] == "nettest")) {
     // When `--help` is passed we only show the general help when no subcommand
     // is present
     help()
     await exit(0)
   }
-
   try {
     const camelName = camelCase(subcommand)
     const nettest = nettests[camelName]

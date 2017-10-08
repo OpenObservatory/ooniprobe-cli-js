@@ -23,6 +23,22 @@ Edit files and run the CLI with:
 node dist/ooni.js
 ```
 
+### Building
+
+To build a static binary you just need to run:
+
+```
+yarn run pack
+```
+
+The `packed/` directory will then contain:
+
+```
+ooni-linux
+ooni-macos
+ooni-win.exe
+```
+
 ## TODO
 
 *CLI related*

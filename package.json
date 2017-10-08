@@ -5,7 +5,18 @@
   "main": "src/ooni.js",
   "license": "MIT",
   "scripts": {
-    "dev": "webpack -w"
+    "dev": "webpack -w",
+    "pack": "webpack && pkg dist/ooni.js -c package.json -o packed/ooni"
+  },
+  "pkg": {
+    "scripts": [
+      "dist/*"
+    ],
+    "targets": [
+      "node7-linux-x64",
+      "node7-macos-x64",
+      "node7-win-x64"
+    ]
   },
   "devDependencies": {
     "ansi-escapes": "^3.0.0",
@@ -21,11 +32,13 @@
     "lodash.range": "^3.2.0",
     "mri": "^1.1.0",
     "ora": "^1.3.0",
+    "pkg": "^4.2.4",
     "shebang-loader": "^0.0.1",
     "string-length": "^2.0.0",
     "webpack": "^3.6.0",
     "webpack-node-externals": "^1.6.0",
     "wrap-ansi": "^3.0.1"
   },
-  "dependencies": {}
+  "dependencies": {
+  }
 }

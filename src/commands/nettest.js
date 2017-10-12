@@ -153,18 +153,26 @@ const main = async ctx => {
   argv._ = argv._.slice(1)
   subcommand = argv._[0]
   if (subcommand === 'nettest' && argv.help && argv._[1]) {
+    // if help flag has been passed without minus prefix
+    // increment subcommand argument index
     subcommand = argv._[1]
   }  
   else if (!subcommand || (argv.help && argv._[0] == "nettest")) {
     // When `--help` is passed we only show the general help when no subcommand
-    // is present
+    // is present (second statement for when help has been used without minux prefix)
     help()
     await exit(0)
   }
   try {
     const camelName = camelCase(subcommand)
     const nettest = nettests[camelName]
-    if (argv.help) {
+    if (!nettest) {
+      //if nettest doesn't exist show available nettests
+      console.log("\nThis nettest could not be found. Available nettests are: \n\n")
+      console.log(`${Object.keys(nettests).map((name) => `${name}  [options]  ${nettests[name].shortDescription}`).join('\n')}`)
+      console.log("\n\n Info for each nettest is available by calling 'ooni --help nettest [nettest name]'\n")
+      }
+    else if (argv.help) {
       nettest.help()
       await exit(0)
     } else {

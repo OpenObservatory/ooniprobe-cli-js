@@ -4,16 +4,16 @@ import chalk from 'chalk'
 import header from './header'
 import optionPad from './option-pad'
 
-export const nettestHelp = (nettests, nettestName, options) => (`
+export const nettestHelp = (meta, nettestName, options) => (`
   ${header}
 
-  ${chalk.bold(nettests[nettestName].name)}
+  ${chalk.bold(meta.name)}
 
-  ${wrapAnsi(nettests[nettestName].shortDescription, 40)}
+  ${wrapAnsi(meta.shortDescription, 40)}
 
   ${chalk.dim('Usage:')}
 
-    ooni nettest [options] ${nettestName} [options] <url>
+    ooni nettest [options] ${nettestName} <url>
 
   ${chalk.dim('Options:')}
 

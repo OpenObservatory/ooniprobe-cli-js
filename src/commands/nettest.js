@@ -156,7 +156,7 @@ const main = async ctx => {
     // if help flag has been passed without minus prefix
     // increment subcommand argument index
     subcommand = argv._[1]
-  }  
+  }
   else if (!subcommand || (argv.help && argv._[0] == "nettest")) {
     // When `--help` is passed we only show the general help when no subcommand
     // is present (second statement for when help has been used without minux prefix)

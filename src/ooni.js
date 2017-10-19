@@ -32,7 +32,7 @@ const main = async (argv_) => {
 
   let subcommand = argv._[2]
 
-  if (!subcommand) {    
+  if (!subcommand) {
     if (argv.version) {
       console.log(require('../package').version)
       return 0

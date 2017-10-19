@@ -47,7 +47,7 @@ const helptext = `
                                 locks in complex code.
           --version             Display the ooniprobe version and exit.
 
-	[Old Helptext! Needs to be updated.]          
+	[Old Helptext! Needs to be updated.]
   `
 module.exports = helptext
 

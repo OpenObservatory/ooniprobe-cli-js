@@ -1,7 +1,8 @@
 import wrapAnsi from 'wrap-ansi'
 import chalk from 'chalk'
 
-import logo from './logo'
+import header from './header'
+
 import optionPad from './option-pad'
 import commandPad from './command-pad'
 
@@ -39,7 +40,7 @@ const options = [
 ]
 
 const help = `
-  ${chalk.blue(logo)} ${chalk.bold('OONI Probe')}
+  ${header}
 
   ${chalk.dim('Usage:')}
 

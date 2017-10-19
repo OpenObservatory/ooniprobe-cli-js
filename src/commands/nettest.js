@@ -3,7 +3,7 @@ import range from 'lodash.range'
 
 import chalk from 'chalk'
 import info from '../cli/output/info'
-import logo from '../cli/output/logo'
+import header from '../cli/output/header'
 import error from '../cli/output/error'
 import ok from '../cli/output/ok'
 import notok from '../cli/output/notok'
@@ -118,7 +118,11 @@ const help = () => {
   }))
 
   console.log(`
-  $ ooni nettest [options] <nettest> [options]
+  ${header}
+  
+  ${chalk.dim('Usage:')}
+
+    ooni nettest [options] <nettest> [options]
 
   ${chalk.dim('Nettests:')}
 
@@ -153,12 +157,11 @@ const main = async ctx => {
 
   argv._ = argv._.slice(1)
   subcommand = argv._[0]
-  if (subcommand === 'nettest' && argv.help && argv._[1]) {
+  if ((subcommand === 'nettest' || subcommand === 'nt') && argv.help && argv._[1]) {
     // if help flag has been passed without minus prefix
     // increment subcommand argument index
     subcommand = argv._[1]
-  }
-    else if (!subcommand || (argv.help && argv._[0] == "nettest")) {
+  } else if (!subcommand || argv.help) {
     // When `--help` is passed we only show the general help when no subcommand
     // is present (second statement for when help has been used without minux prefix)
     help()
@@ -169,11 +172,10 @@ const main = async ctx => {
     const nettest = nettests[camelName]
     if (!nettest) {
       //if nettest doesn't exist show available nettests
-      console.log("\nThis nettest could not be found. Available nettests are: \n\n")
-      console.log(`${Object.keys(nettests).map((name) => `${name}  [options]  ${nettests[name].shortDescription}`).join('\n')}`)
-      console.log("\n\n Info for each nettest is available by calling 'ooni --help nettest [nettest name]'\n")
-      }
-    else if (argv.help) {
+      console.log(error('Nettest not found'))
+      help()
+      await exit(1)
+    } else if (argv.help) {
       nettest.help()
       await exit(0)
     } else {

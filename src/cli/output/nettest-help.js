@@ -1,11 +1,11 @@
 import wrapAnsi from 'wrap-ansi'
 import chalk from 'chalk'
 
-import logo from './logo'
+import header from './header'
 import optionPad from './option-pad'
 
 export const nettestHelp = (nettests, nettestName, options) => (`
-  ${chalk.blue(logo)} ${chalk.bold('OONI Probe')}
+  ${header}
 
   ${chalk.bold(nettests[nettestName].name)}
 

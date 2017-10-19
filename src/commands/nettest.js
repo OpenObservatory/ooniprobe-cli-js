@@ -1,7 +1,6 @@
 import mri from 'mri'
 import range from 'lodash.range'
 
-import wrapAnsi from 'wrap-ansi'
 import chalk from 'chalk'
 import info from '../cli/output/info'
 import logo from '../cli/output/logo'
@@ -9,28 +8,14 @@ import error from '../cli/output/error'
 import ok from '../cli/output/ok'
 import notok from '../cli/output/notok'
 import wait from '../cli/output/wait'
-import printOptions from '../cli/output/options'
+import nettestHelp from '../cli/output/nettest-help'
+import rightPad from '../cli/output/right-pad'
+import optionPad from '../cli/output/option-pad'
 
 import exit from '../util/exit'
 import sleep from '../util/sleep'
 
 import camelCase from 'camelcase'
-
-
-const printNettestHelp = (nettestName, options) => {
-    console.log(`
-  ${chalk.blue(logo)} ${chalk.bold('OONI Probe')}
-
-  ${chalk.bold(nettests[nettestName].name)}
-
-  ${wrapAnsi(nettests[nettestName].shortDescription, 40)}
-
-  ${chalk.dim('Usage:')}
-
-    ooni nettest [options] ${nettestName} [options] <url>
-`)
-  printOptions(options)
-}
 
 class NettestRunner {
   /*
@@ -96,7 +81,7 @@ class WebConnectivityRunner extends NettestRunner {
   }
 
   help() {
-    printNettestHelp('webConnectivity', [
+    console.log(nettestHelp(nettests, 'webConnectivity', [
       {
         option: '-h, --help',
         description: 'Display usage information'
@@ -105,7 +90,7 @@ class WebConnectivityRunner extends NettestRunner {
         option: `-f, --file ${chalk.bold.underline('FILE')}`,
         description: 'The path to a list of websites to test'
       }
-    ])
+    ]))
   }
 }
 
@@ -116,18 +101,34 @@ const nettests = {
 }
 
 const help = () => {
+  const options = [
+      {
+        option: '-h, --help',
+        description: 'Display usage information'
+      },
+      {
+        option: `-o, --output ${chalk.bold.underline('OUTPUT')}`,
+        description: 'Path to write measurements to'
+      },
+  ]
+
+  const nettestOptions = Object.keys(nettests).map(name => ({
+    option: chalk.bold(name),
+    description: nettests[name].shortDescription
+  }))
+
   console.log(`
-  ${chalk.bold(chalk.blue(logo))} ooni nettest [options] <nettest> [options]
+  $ ooni nettest [options] <nettest> [options]
 
   ${chalk.dim('Nettests:')}
 
-    ${Object.keys(nettests).map((name) => `${name}  [options]  ${nettests[name].shortDescription}`).join('\n')}
+    ${nettestOptions.map((opt) => optionPad(opt, 80)).join('\n    ')}
 
   ${chalk.dim('Options:')}
 
-    -h, --help                          Output usage information
-    -o ${chalk.bold.underline('OUTPUT')},       Path to write report output to
-  `)
+    ${options.map((opt) => optionPad(opt, 80)).join('\n    ')}
+
+`)
 }
 
 const run = async ({nettest}) => {
@@ -157,7 +158,7 @@ const main = async ctx => {
     // increment subcommand argument index
     subcommand = argv._[1]
   }
-  else if (!subcommand || (argv.help && argv._[0] == "nettest")) {
+    else if (!subcommand || (argv.help && argv._[0] == "nettest")) {
     // When `--help` is passed we only show the general help when no subcommand
     // is present (second statement for when help has been used without minux prefix)
     help()

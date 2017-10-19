@@ -2,12 +2,9 @@ import chalk from 'chalk'
 import stringLength from 'string-length'
 import wrapAnsi from 'wrap-ansi'
 
-export const rightPad = (s, n) => {
-  n -= stringLength(s)
-  return ' '.repeat(n > -1 ? n : 0)
-}
+import rightPad from './right-pad'
 
-export const optionWithPadding = (opt) => {
+export const optionPad = (opt) => {
   /*
    * We want the optionWithPadding to look like this:
    * _____________________________________
@@ -29,11 +26,4 @@ export const optionWithPadding = (opt) => {
           }).join('\n')
 }
 
-export const printOptions = (options) => {
-  console.log(`
-  ${chalk.dim('Options:')}
-
-    ${options.map((opt) => optionWithPadding(opt, 80)).join('\n    ')}
-`)
-}
-export default printOptions
+export default optionPad

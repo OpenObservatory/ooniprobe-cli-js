@@ -40,7 +40,10 @@ const main = async (argv_) => {
     else if (argv.help) {
       console.log(require('./cli/output/help.js'))
       return 0
-    }        
+    } else {
+      console.log(require('./cli/output/help.js'))
+      return 1
+    }
   }
 
   // We do it now since we may have to perform a migration too
@@ -129,8 +132,8 @@ const main = async (argv_) => {
     ctx.argv.push('-h')
   }
   else if (subcommand === 'help' && !argv._[3]){
-  console.log(require('./cli/output/help.js'))
-      return 0
+    console.log(require('./cli/output/help.js'))
+    return 0
   }
 
   switch(subcommand) {

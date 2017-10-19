@@ -27,6 +27,10 @@ const commands = [
     name: 'help',
     description: 'Show help information for the specified command'
   },
+  {
+    name: 'version',
+    description: 'Show version information'
+  },
 ]
 const options = [
   {

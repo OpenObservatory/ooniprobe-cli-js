@@ -32,18 +32,19 @@ const main = async (argv_) => {
 
   let subcommand = argv._[2]
 
+  if (!subcommand && argv.help) {
+    console.log(require('./cli/output/help.js'))
+    return 0
+  }
+  if (argv.version || subcommand === 'version') {
+    console.log(require('../package').version)
+    return 0
+  }
+
   if (!subcommand) {
-    if (argv.version) {
-      console.log(require('../package').version)
-      return 0
-    }
-    else if (argv.help) {
-      console.log(require('./cli/output/help.js'))
-      return 0
-    } else {
-      console.log(require('./cli/output/help.js'))
-      return 1
-    }
+    console.error(error('No command was specified'))
+    console.log(require('./cli/output/help.js'))
+    return 1
   }
 
   // We do it now since we may have to perform a migration too

@@ -72,7 +72,7 @@ const main = async ctx => {
 
   argv._ = argv._.slice(1)
   subcommand = argv._[0]
-  
+
   debug('subcommand', subcommand)
   debug('argv', argv)
   debug('argv._[1]', argv._[1])
@@ -95,13 +95,15 @@ const main = async ctx => {
   }
   try {
     const camelName = camelCase(subcommand)
-    const nettest = new nettests[camelName]
-    if (!nettest) {
+    if (!nettests[camelName]) {
       // if nettest doesn't exist show available nettests
-      console.log(error('Nettest not found'))
+      console.log(error(`Nettest "${camelName}" not found`))
       help()
       await exit(1)
-    } else if (argv.help) {
+      return
+    }
+    const nettest = new nettests[camelName]
+    if (argv.help) {
       console.log(nettest.help)
       await exit(0)
     } else {

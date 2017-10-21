@@ -12,6 +12,7 @@ class HTTPInvalidRequestLine extends NettestBase {
   }
 
   async run() {
+    
   }
 }
 export default HTTPInvalidRequestLine

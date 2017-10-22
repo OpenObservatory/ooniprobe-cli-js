@@ -12,6 +12,7 @@ import header from '../cli/output/header'
 import error from '../cli/output/error'
 
 import optionPad from '../cli/output/option-pad'
+import rightPad from '../cli/output/right-pad'
 import labelValue from '../cli/output/label-value'
 import icons from '../cli/output/icons'
 
@@ -102,17 +103,29 @@ const listAction = async ctx => {
   const reports = await listReports()
   debug('reports', reports)
   reports.map(r => {
-    const fromNow = moment(r.testStartTime).fromNow()
     const testName = nettests[camelCase(r.testName)].name
+    const testNamePad = rightPad(testName, 11)
     const msmtCountUnit = r.measurementCount > 1 ? 'measurements' : 'measurement'
-    console.log(`${icons.report}  ${testName} Test results from ${fromNow}`)
-    console.log(`   ${chalk.bold(r.measurementCount)} ${chalk.dim(msmtCountUnit)} from ${chalk.cyan(r.asn)} (${chalk.cyan(r.country)})`)
+    let testInfo = `${moment(r.testStartTime).fromNow()} from `
+    testInfo += `${chalk.cyan(r.asn)} (${chalk.cyan(r.country)})`
+    const testInfoPad = rightPad(testInfo, 35)
+
+    console.log(`
+  ┌─────────────┐
+┌─│ ${testName}${testNamePad} │─────────────────────────────────────┐
+│ └─────────────┘ ${testInfo}${testInfoPad} │
+├─────────────────────────────────────────────────────┤`)
+
+    //console.log(`${icons.report}  ${testName} Test results from ${fromNow}`)
+    //console.log(`   ${chalk.bold(r.measurementCount)} ${chalk.dim(msmtCountUnit)} from `)
     //console.log(`${labelValue('ASN', r.asn)} ${labelValue('Country', r.country)}`)
     //console.log(`⁝ ${chalk.bold('Summary')}`)
     r.summary.map(s => {
-      console.log(labelValue(s.label, s.value, {unit: s.unit}))
+      const line = labelValue(s.label, s.value, {unit: s.unit})
+      const linePad = rightPad(line, 51)
+      console.log(`│ ${line}${linePad} │`)
     })
-    console.log('')
+    console.log('└─────────────────────────────────────────────────────┘')
   })
   await exit(1)
 }

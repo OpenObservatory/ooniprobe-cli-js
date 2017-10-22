@@ -105,27 +105,26 @@ const listAction = async ctx => {
   reports.map(r => {
     const testName = nettests[camelCase(r.testName)].name
     const testNamePad = rightPad(testName, 11)
-    const msmtCountUnit = r.measurementCount > 1 ? 'measurements' : 'measurement'
+    const msmtCountUnit = r.measurementCount > 1 ? 'msmts' : 'msmt'
     let testInfo = `${moment(r.testStartTime).fromNow()} from `
-    testInfo += `${chalk.cyan(r.asn)} (${chalk.cyan(r.country)})`
-    const testInfoPad = rightPad(testInfo, 35)
+    testInfo += `${chalk.cyan(r.asn)}, ${chalk.cyan(r.country)} (${chalk.bold(r.measurementCount)} ${chalk.dim(msmtCountUnit)})`
+    const testInfoPad = rightPad(testInfo, 43)
 
-    console.log(`
-  ┌─────────────┐
-┌─│ ${testName}${testNamePad} │─────────────────────────────────────┐
-│ └─────────────┘ ${testInfo}${testInfoPad} │
-├─────────────────────────────────────────────────────┤`)
+    console.log(`  ┌─────────────┐
+┌─│ ${testName}${testNamePad} │───────────────────────────────────────────────┐
+│ └─────────────┘   ${testInfo}${testInfoPad} │
+├───────────────────────────────────────────────────────────────┤`)
 
     //console.log(`${icons.report}  ${testName} Test results from ${fromNow}`)
-    //console.log(`   ${chalk.bold(r.measurementCount)} ${chalk.dim(msmtCountUnit)} from `)
+    //console.log(`     from `)
     //console.log(`${labelValue('ASN', r.asn)} ${labelValue('Country', r.country)}`)
     //console.log(`⁝ ${chalk.bold('Summary')}`)
     r.summary.map(s => {
       const line = labelValue(s.label, s.value, {unit: s.unit})
-      const linePad = rightPad(line, 51)
+      const linePad = rightPad(line, 61)
       console.log(`│ ${line}${linePad} │`)
     })
-    console.log('└─────────────────────────────────────────────────────┘')
+    console.log('└───────────────────────────────────────────────────────────────┘')
   })
   await exit(1)
 }

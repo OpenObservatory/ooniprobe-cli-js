@@ -108,23 +108,23 @@ const listAction = async ctx => {
     const msmtCountUnit = r.measurementCount > 1 ? 'msmts' : 'msmt'
     let testInfo = `${moment(r.testStartTime).fromNow()} from `
     testInfo += `${chalk.cyan(r.asn)}, ${chalk.cyan(r.country)} (${chalk.bold(r.measurementCount)} ${chalk.dim(msmtCountUnit)})`
-    const testInfoPad = rightPad(testInfo, 43)
+    const testInfoPad = rightPad(testInfo, 58)
+    const showCommand = `${r.reportId}`
+    const showCommandPad = rightPad(showCommand, 76)
 
     console.log(`  ┌─────────────┐
-┌─│ ${testName}${testNamePad} │───────────────────────────────────────────────┐
+┌─│ ${testName}${testNamePad} │──────────────────────────────────────────────────────────────┐
 │ └─────────────┘   ${testInfo}${testInfoPad} │
-├───────────────────────────────────────────────────────────────┤`)
-
-    //console.log(`${icons.report}  ${testName} Test results from ${fromNow}`)
-    //console.log(`     from `)
-    //console.log(`${labelValue('ASN', r.asn)} ${labelValue('Country', r.country)}`)
-    //console.log(`⁝ ${chalk.bold('Summary')}`)
+├──────────────────────────────────────────────────────────────────────────────┤`)
     r.summary.map(s => {
       const line = labelValue(s.label, s.value, {unit: s.unit})
-      const linePad = rightPad(line, 61)
+      const linePad = rightPad(line, 76)
       console.log(`│ ${line}${linePad} │`)
     })
-    console.log('└───────────────────────────────────────────────────────────────┘')
+    console.log('│──────────────────────────────────────────────────────────────────────────────│')
+    console.log('│ $ ooni show                                                                  │')
+    console.log(`│ ${showCommand}${showCommandPad} │`)
+    console.log('└──────────────────────────────────────────────────────────────────────────────┘')
   })
   await exit(1)
 }

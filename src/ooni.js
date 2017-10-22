@@ -140,6 +140,9 @@ const main = async (argv_) => {
     case 'run': {
       return commands.run(ctx)
     }
+    case 'show': {
+      return commands.show(ctx)
+    }
     case 'nt':
     case 'nettest': {
       return commands.nettest(ctx)

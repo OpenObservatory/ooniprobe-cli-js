@@ -37,7 +37,7 @@ const help = () => {
 
   ${chalk.dim('Usage:')}
 
-    ooni nettest [options] <nettest> [options]
+    ooni nettest [options] <nettest>
 
   ${chalk.dim('Nettests:')}
 

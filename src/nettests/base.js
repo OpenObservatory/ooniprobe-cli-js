@@ -1,15 +1,16 @@
 import path from 'path'
 
+import * as fs from 'fs-extra'
+
 import moment from 'moment'
 import camelCase from 'camelcase'
 
 import { getOoniDir } from '../config/global-path'
 import { openDatabases } from '../config/db'
+import iso8601 from '../util/iso8601'
 
 const OONI_DIR = getOoniDir()
 
-const ISODatetimeFormat = 'YYYYMMDDThhmmss'
-//20171019T144412
 const randInt = (min, max) => {
   return Math.floor(Math.random() * max - min) + min
 }
@@ -23,6 +24,7 @@ class NettestBase {
     this.rawMeasurementsPath = null
     this.db = null
     this.reportId = null
+    this.summary = {}
 
     this.country = 'ZZ'
     this.asn = 'AS0'
@@ -52,6 +54,7 @@ class NettestBase {
 
   async run(argv) {
     this.rawMeasurementsPath = this.getMeasurementPath()
+    await fs.ensureDir(path.dirname(this.rawMeasurementsPath))
     this.db = await openDatabases()
   }
 
@@ -62,7 +65,7 @@ class NettestBase {
     if (this.rawMeasurementsPath) {
       return this.rawMeasurementsPath
     }
-    let filename = `${moment.utc().format(ISODatetimeFormat)}Z-`
+    let filename = `${moment.utc().format(iso8601)}Z-`
     filename += `${camelCase(this.constructor.name)}-${randInt(10, 30)}.jsonl`
     return path.join(OONI_DIR, 'measurements', 'raw', filename)
   }

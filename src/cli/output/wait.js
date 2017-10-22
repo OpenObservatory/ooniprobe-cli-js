@@ -6,11 +6,12 @@ const wait = msg => {
   spinner.color = 'gray'
   spinner.start()
 
-  return (options) => {
-    if (!options) {
-      options = {symbol: ' '}
+  return (persist = true, options = {symbol: ' '}) => {
+    if (persist) {
+      spinner.stopAndPersist(options)
+    } else {
+      spinner.stop()
     }
-    spinner.stopAndPersist(options)
   }
 }
 export default wait

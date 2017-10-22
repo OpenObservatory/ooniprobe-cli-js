@@ -32,6 +32,7 @@
     "flow-babel-webpack-plugin": "^1.1.0",
     "fs-extra": "^4.0.2",
     "inquirer": "^3.3.0",
+    "keypress": "^0.2.1",
     "leveldown": "^2.0.0",
     "levelup": "^2.0.0",
     "lodash": "^4.17.4",
@@ -45,7 +46,10 @@
     "string-length": "^2.0.0",
     "webpack": "^3.6.0",
     "webpack-node-externals": "^1.6.0",
+    "window-size": "^1.1.0",
     "wrap-ansi": "^3.0.1"
   },
-  "dependencies": {}
+  "dependencies": {
+    "prettyjson": "^1.2.1"
+  }
 }

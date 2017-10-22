@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "webpack -w",
-    "pack": "webpack && pkg dist/ooni.js -c package.json -o packed/ooni"
+    "pack": "webpack && pkg dist/ooni.js -c package.json -o packed/ooni",
+    "rm-home-data": "rm -rf ~/.ooni/measurements && rm -rf ~/.ooni/*.ldb"
   },
   "pkg": {
     "scripts": [
@@ -33,6 +34,7 @@
     "inquirer": "^3.3.0",
     "leveldown": "^2.0.0",
     "levelup": "^2.0.0",
+    "lodash": "^4.17.4",
     "lodash.range": "^3.2.0",
     "moment": "^2.19.1",
     "mri": "^1.1.0",

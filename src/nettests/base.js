@@ -6,7 +6,6 @@ import moment from 'moment'
 import camelCase from 'camelcase'
 
 import { getOoniDir } from '../config/global-path'
-import { openDatabases } from '../config/db'
 import iso8601 from '../util/iso8601'
 
 const OONI_DIR = getOoniDir()
@@ -22,7 +21,6 @@ class NettestBase {
 
   constructor() {
     this.rawMeasurementsPath = null
-    this.db = null
     this.reportId = null
     this.summary = {}
 
@@ -55,7 +53,6 @@ class NettestBase {
   async run(argv) {
     this.rawMeasurementsPath = this.getMeasurementPath()
     await fs.ensureDir(path.dirname(this.rawMeasurementsPath))
-    this.db = await openDatabases()
   }
 
   getMeasurementPath() {

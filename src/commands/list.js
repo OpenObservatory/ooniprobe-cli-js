@@ -19,7 +19,14 @@ import exit from '../util/exit'
 
 import nettests from '../nettests'
 
-import { openDatabases } from '../config/db'
+import {
+  getMeasurement,
+  putMeasurement,
+  openMeasurements,
+  getReport,
+  putReport,
+  openReports,
+} from '../config/db'
 
 const debug = require('debug')('commands.list')
 
@@ -68,19 +75,24 @@ const listAction = async ctx => {
     await exit(0)
   }
 
-  const db = await openDatabases()
   const listReports = () => new Promise((resolve, reject) => {
     try {
-      const stream = db.reports.createReadStream()
-      let reports = []
-      stream.on('data', data => {
-        debug(`${data.key}=${data.value}`)
-        let obj = JSON.parse(data.value)
-        obj.reportId = data.key.toString('utf-8')
-        reports.push(obj)
-      })
-      stream.on('close', () => resolve(reports))
-      stream.on('end', () => resolve(reports))
+      openReports()
+        .then(db => {
+          const stream = db.createReadStream()
+          let reports = []
+          stream.on('data', data => {
+            debug(`${data.key}=${data.value}`)
+            let obj = JSON.parse(data.value)
+            obj.reportId = data.key.toString('utf-8')
+            reports.push(obj)
+          })
+          stream.on('close', () => {
+            resolve(reports)
+          })
+          stream.on('end', () => db.close())
+        })
+        .catch(err => reject(err))
     } catch (err) {
       debug('err', err)
       reject(err)

@@ -22,6 +22,12 @@ import rightPad from '../cli/output/right-pad'
 import sleep from '../util/sleep'
 
 import { getOoniDir } from '../config/global-path'
+import {
+  getMeasurement,
+  putMeasurement,
+  getReport,
+  putReport,
+} from '../config/db'
 
 import NettestBase from './base'
 
@@ -45,8 +51,6 @@ class NDT extends NettestBase {
 
   async run(argv) {
     await super.run(argv)
-    const db = this.db
-
     const args = [
       '-o',
       this.rawMeasurementsPath,
@@ -57,7 +61,8 @@ class NDT extends NettestBase {
       stdio: 'pipe'
     }
     let progressInfo = wait('starting'),
-        persist = true
+        persist = true,
+        reportPromises = []
     const ndt = childProcess.spawn('measurement_kit', args, options)
     const stdoutLines = ndt.stdout.pipe(StreamSplitter('\n'))
     const stderrLines = ndt.stderr.pipe(StreamSplitter('\n'))
@@ -95,13 +100,14 @@ class NDT extends NettestBase {
         this.asn = s.split(':')[1].trim()
       } else if (!this.reportId && s.startsWith('Report ID:')) {
         this.reportId = s.split(':')[1].trim()
-        db.reports.put(this.reportId, JSON.stringify({
+        debug('calling putReport')
+        reportPromises.push(putReport(this.reportId, JSON.stringify({
           asn: this.asn,
           country: this.country,
           ip: this.ip,
           testName: 'ndt',
           path: this.rawMeasurementsPath,
-        }))
+        })))
       }
       debug('err', s)
     }).bind(this))
@@ -127,7 +133,7 @@ class NDT extends NettestBase {
     const updateDb = (() => {
       const reportId = this.reportId
       return new Promise((resolve, reject) => {
-        db.reports.get(reportId)
+        getReport(reportId)
           .then(value => {
             const obj = JSON.parse(value)
             let promises = [],
@@ -166,7 +172,7 @@ class NDT extends NettestBase {
                   unit: 'ms'
                 }
               ]
-              promises.push(db.measurements.put(msmtKey, JSON.stringify({
+              promises.push(putMeasurement(msmtKey, JSON.stringify({
                 id: msmt.id,
                 measurementCount,
                 summary,
@@ -183,7 +189,7 @@ class NDT extends NettestBase {
               })
               Promise.all(promises)
                 .then(() => {
-                  db.reports.put(reportId, JSON.stringify(report))
+                  putReport(reportId, JSON.stringify(report))
                 })
                 .catch(err => reject(err))
             })
@@ -193,9 +199,14 @@ class NDT extends NettestBase {
 
     await new Promise((resolve, reject) => {
       ndt.on('close', () => {
-        printSummary()
-        updateDb()
-          .then(() => resolve())
+        // Better safe than sorry
+        Promise.all(reportPromises)
+          .then(() => {
+            printSummary()
+            updateDb()
+              .then(() => resolve())
+              .catch(err => reject(err))
+          })
           .catch(err => reject(err))
       })
     })

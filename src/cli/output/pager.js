@@ -4,8 +4,6 @@ import ansiEscapes from 'ansi-escapes'
 import windowSize from 'window-size'
 import keypress from 'keypress'
 
-
-
 export const pager = (text) => {
   // XXX we only support shortish texts
   return new Promise((resolve, reject) => {

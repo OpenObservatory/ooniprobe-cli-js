@@ -33,6 +33,10 @@ const help = () => {
       {
         option: '-h, --help',
         description: 'Display usage information'
+      },
+      {
+        option: '    --no-pager',
+        description: 'Disable pager'
       }
   ]
 
@@ -55,7 +59,7 @@ let argv
 let subcommand
 const main = async ctx => {
   argv = mri(ctx.argv.slice(2), {
-    boolean: ['help'],
+    boolean: ['help', 'no-pager'],
     alias: {
       help: 'h'
     }
@@ -84,8 +88,12 @@ const main = async ctx => {
         const stream = fs.createReadStream(obj.path).pipe(StreamSplitter("\n"))
         stream.on('token', line => {
           const msmt = JSON.parse(line)
-          pager(prettyjson.render(msmt))
-            .then(() => resolve())
+          if (argv['pager'] === false) {
+            console.log(prettyjson.render(msmt))
+          } else {
+            pager(prettyjson.render(msmt))
+              .then(() => resolve())
+          }
         })
       })
   })

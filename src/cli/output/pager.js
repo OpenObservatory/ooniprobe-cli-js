@@ -37,11 +37,12 @@ export const pager = (text) => {
 
       printStatus() {
         let s = this.isEnd ? 'END' : ':'
-        ansiEscapes.eraseLines(1)
+        process.stdout.write(ansiEscapes.eraseLines(1))
         process.stdout.write(s)
         process.stdout.write(ansiEscapes.cursorTo(1, windowSize.height))
       }
       printPage() {
+        process.stdout.write(ansiEscapes.eraseScreen)
         this.lines
           .filter((line, idx) => (idx >= this.pos && idx < (windowSize.height + this.pos - 1)))
           .map(line => console.log(line))
@@ -56,31 +57,42 @@ export const pager = (text) => {
       if (!key) {
         return
       }
-      console.log(key.name)
       switch (key.name) {
         case 'j':
         case 'down':
         case 'return':
         case 'space': {
-          return p.down()
+          p.down()
+          break
         }
         case 'k':
         case 'up': {
-          return p.up()
+          p.up()
+          break
         }
         case 'q': {
-          return resolve(true)
+          resolve(true)
+          break
         }
         case 'n': {
-          return resolve(false)
+          resolve(false)
+          break
         }
         case 'u':
         case 'pageup': {
-          return p.up(Math.floor(windowSize.height/2))
+          if (key.name === 'u' && !key.ctrl) {
+            break
+          }
+          p.up(Math.floor(windowSize.height/2))
+          break
         }
         case 'd':
         case 'pagedown': {
-          return p.down(Math.floor(windowSize.height/2))
+          if (key.name === 'd' && !key.ctrl) {
+            break
+          }
+          p.down(Math.floor(windowSize.height/2))
+          break
         }
       }
       if (key && key.ctrl && key.name == 'c') {

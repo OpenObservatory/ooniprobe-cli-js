@@ -8,7 +8,6 @@ import childProcess from 'child_process'
 import { spawn } from 'child-process-promise'
 import StreamSplitter from 'stream-splitter'
 
-import exit from '../util/exit'
 import iso8601 from '../util/iso8601'
 
 import wait from '../cli/output/wait'
@@ -210,7 +209,6 @@ class NDT extends NettestBase {
           .catch(err => reject(err))
       })
     })
-    await exit(0)
   }
 
   static get help() {

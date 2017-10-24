@@ -32,7 +32,6 @@ export const pager = (text) => {
         }
         this.printPage()
       }
-
       printStatus() {
         let s = this.isEnd ? 'END' : ':'
         process.stdout.write(ansiEscapes.eraseLines(1))

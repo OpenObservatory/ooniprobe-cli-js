@@ -87,7 +87,7 @@ const main = async ctx => {
       help()
       await exit(0)
     }
-  } else if (!subcommand && argv.help) {
+  } else if (!subcommand) {
     // When `--help` is passed we only show the general help when no subcommand
     // is present (second statement for when help has been used without minux prefix)
     help()

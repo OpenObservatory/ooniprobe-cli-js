@@ -9,8 +9,15 @@ const debug = require('debug')('config.db')
 
 const OONI_DIR = getOoniDir()
 
-const MEASUREMENTS_PATH = path.join(OONI_DIR, 'measurements.ldb')
+/*
+ * Results: are many reports run via the ooni run
+ * Reports: are a collection of measurements
+ * Measurements: are individual measurements
+ */
+ 
+const RESULTS_PATH = path.join(OONI_DIR, 'results.ldb')
 const REPORTS_PATH = path.join(OONI_DIR, 'reports.ldb')
+const MEASUREMENTS_PATH = path.join(OONI_DIR, 'measurements.ldb')
 const STATS_PATH = path.join(OONI_DIR, 'stats.ldb')
 
 const levelOptions = {

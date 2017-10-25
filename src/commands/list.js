@@ -14,6 +14,7 @@ import error from '../cli/output/error'
 import optionPad from '../cli/output/option-pad'
 import rightPad from '../cli/output/right-pad'
 import labelValue from '../cli/output/label-value'
+import testResults from '../cli/output/test-results'
 import icons from '../cli/output/icons'
 
 import exit from '../util/exit'
@@ -99,33 +100,7 @@ const listAction = async ctx => {
 
   const reports = await listReports()
   debug('reports', reports)
-  reports.map(r => {
-    const testName = nettests[camelCase(r.testName)].name
-    const testNamePad = rightPad(testName, 11)
-    const msmtCountUnit = r.measurementCount > 1 ? 'msmts' : 'msmt'
-    let testInfo = `${moment(r.testStartTime).fromNow()} from `
-    testInfo += `${chalk.cyan(r.asn)}, ${chalk.cyan(r.country)} (${chalk.bold(r.measurementCount)} ${chalk.dim(msmtCountUnit)})`
-    const testInfoPad = rightPad(testInfo, 58)
-    const showCommand = `${r.reportId}`
-    const showCommandPad = rightPad(showCommand, 76)
-    if (!r.summary) {
-      return
-    }
-
-    console.log(`  ┌─────────────┐
-┌─│ ${testName}${testNamePad} │──────────────────────────────────────────────────────────────┐
-│ └─────────────┘   ${testInfo}${testInfoPad} │
-├──────────────────────────────────────────────────────────────────────────────┤`)
-    r.summary.map(s => {
-      const line = labelValue(s.label, s.value, {unit: s.unit})
-      const linePad = rightPad(line, 76)
-      console.log(`│ ${line}${linePad} │`)
-    })
-    console.log('├──────────────────────────────────────────────────────────────────────────────┤')
-    console.log('│ $ ooni show                                                                  │')
-    console.log(`│ ${showCommand}${showCommandPad} │`)
-    console.log('└──────────────────────────────────────────────────────────────────────────────┘')
-  })
+  console.log(testResults(reports))
   await exit(1)
 }
 export default listAction

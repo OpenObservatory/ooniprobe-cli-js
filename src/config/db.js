@@ -17,9 +17,14 @@ const levelOptions = {
   valueEncoding: 'json'
 }
 
+let handles = {}
 const getDbHandle = (path) => {
   debug(`Getting a DB handle for ${path}`)
-  return level(path, levelOptions)
+  if (handles[path]) {
+    return handles[path]
+  }
+  handles[path] = level(path, levelOptions)
+  return handles[path]
 }
 
 /* These functions take care of performing operations on the database and then
@@ -34,13 +39,7 @@ const getOperation = (path) => {
         if (err) {
           return reject(err)
         }
-        db.close((err) => {
-          if (err) {
-            return reject(err)
-          }
-          debug(`Closing key ${key}`)
-          return resolve(value)
-        })
+        return resolve(value)
       })
     })
   }
@@ -55,13 +54,7 @@ const putOperation = (path) => {
           if (err) {
             return reject(err)
           }
-          db.close((err) => {
-            if (err) {
-              return reject(err)
-            }
-            debug(`Closing key ${key}`)
-            return resolve()
-          })
+          return resolve()
         })
       })
   }

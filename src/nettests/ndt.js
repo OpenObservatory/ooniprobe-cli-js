@@ -100,13 +100,13 @@ class NDT extends NettestBase {
       } else if (!this.reportId && s.startsWith('Report ID:')) {
         this.reportId = s.split(':')[1].trim()
         debug('calling putReport')
-        reportPromises.push(putReport(this.reportId, JSON.stringify({
+        reportPromises.push(putReport(this.reportId, {
           asn: this.asn,
           country: this.country,
           ip: this.ip,
           testName: 'ndt',
           path: this.rawMeasurementsPath,
-        })))
+        }))
       }
       debug('err', s)
     }).bind(this))
@@ -134,64 +134,69 @@ class NDT extends NettestBase {
       return new Promise((resolve, reject) => {
         getReport(reportId)
           .then(value => {
-            const obj = JSON.parse(value)
-            let promises = [],
-                testStartTime,
-                measurementCount = 0,
-                reportOk = true,
-                summary = {}
-            const stream = fs.createReadStream(obj.path).pipe(StreamSplitter("\n"))
-            stream.on('token', line => {
-              const msmt = JSON.parse(line)
+            try {
+              const obj = Object.assign({}, value)
+              let promises = [],
+                  testStartTime,
+                  measurementCount = 0,
+                  reportOk = true,
+                  summary = {}
+              debug('got object', JSON.stringify(obj))
+              const stream = fs.createReadStream(obj.path).pipe(StreamSplitter("\n"))
+              stream.on('token', line => {
+                const msmt = JSON.parse(line)
 
-              let ok = true
-              let msmtKey = msmt.report_id
-              if (msmt.input) {
-                msmtKey += `?${msmt.input}`
-              }
-              let measurementStartTime = moment(msmt.measurement_start_time).format(iso8601)+'Z'
-
-              testStartTime = moment(msmt.test_start_time).format(iso8601)+'Z'
-              measurementCount += 1
-              reportOk = true
-              summary = [
-                {
-                  label: 'Download',
-                  value: toMbit(msmt.test_keys.simple.download),
-                  unit: 'Mbit/s'
-                },
-                {
-                  label: 'Upload',
-                  value: toMbit(msmt.test_keys.simple.upload),
-                  unit: 'Mbit/s'
-                },
-                {
-                  label: 'Ping',
-                  value: msmt.test_keys.simple.ping,
-                  unit: 'ms'
+                let ok = true
+                let msmtKey = msmt.report_id
+                if (msmt.input) {
+                  msmtKey += `?${msmt.input}`
                 }
-              ]
-              promises.push(putMeasurement(msmtKey, JSON.stringify({
-                id: msmt.id,
-                measurementCount,
-                summary,
-                measurementStartTime,
-                ok
-              })))
-            })
-            stream.on('done', () => {
-              const report = Object.assign(obj, {
-                testStartTime,
-                summary,
-                measurementCount,
-                ok
+                let measurementStartTime = moment(msmt.measurement_start_time).format(iso8601)+'Z'
+
+                testStartTime = moment(msmt.test_start_time).format(iso8601)+'Z'
+                measurementCount += 1
+                reportOk = true
+                summary = [
+                  {
+                    label: 'Download',
+                    value: toMbit(msmt.test_keys.simple.download),
+                    unit: 'Mbit/s'
+                  },
+                  {
+                    label: 'Upload',
+                    value: toMbit(msmt.test_keys.simple.upload),
+                    unit: 'Mbit/s'
+                  },
+                  {
+                    label: 'Ping',
+                    value: msmt.test_keys.simple.ping,
+                    unit: 'ms'
+                  }
+                ]
+                promises.push(putMeasurement(msmtKey, {
+                  id: msmt.id,
+                  measurementCount,
+                  summary,
+                  measurementStartTime,
+                  ok
+                }))
               })
-              Promise.all(promises)
-                .then(() => {
-                  putReport(reportId, JSON.stringify(report))
+              stream.on('done', () => {
+                const report = Object.assign(obj, {
+                  testStartTime,
+                  summary,
+                  measurementCount,
+                  ok
                 })
-                .catch(err => reject(err))
-            })
+                Promise.all(promises)
+                  .then(() => {
+                    putReport(reportId, report)
+                  })
+                  .catch(err => reject(err))
+              })
+            } catch(err) {
+              return reject(err)
+            }
           })
       })
     }).bind(this)

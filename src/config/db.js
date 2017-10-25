@@ -1,8 +1,7 @@
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
 
-import levelup from 'levelup'
-import leveldown from 'leveldown'
+import level from 'level-party'
 
 import { getOoniDir } from './global-path'
 
@@ -14,48 +13,57 @@ const MEASUREMENTS_PATH = path.join(OONI_DIR, 'measurements.ldb')
 const REPORTS_PATH = path.join(OONI_DIR, 'reports.ldb')
 const STATS_PATH = path.join(OONI_DIR, 'stats.ldb')
 
+const levelOptions = {
+  valueEncoding: 'json'
+}
+
+const getDbHandle = (path) => {
+  debug(`Getting a DB handle for ${path}`)
+  return level(path, levelOptions)
+}
+
 /* These functions take care of performing operations on the database and then
 /* closing it.
  */
 const getOperation = (path) => {
-  return (key, options = {}) => {
+  return (key) => {
     return new Promise((resolve, reject) => {
-      levelup(leveldown(path), options, (err, db) => {
+      debug(`getOperation ${key}: ${path}`)
+      let db = getDbHandle(path)
+      db.get(key, {}, (err, value) => {
         if (err) {
-          reject(err)
-          return
+          return reject(err)
         }
-        db.get(key)
-          .then(value => {
-            db.close()
-              .then(() => resolve(value))
-              .catch(err => reject(err))
-          })
-          .catch(err => reject(err)) // XXX do I need to close it in this case?
+        db.close((err) => {
+          if (err) {
+            return reject(err)
+          }
+          debug(`Closing key ${key}`)
+          return resolve(value)
+        })
       })
     })
   }
 }
 
 const putOperation = (path) => {
-  return (key, value, options = {}) => {
-    debug('putOperation calling', key, value)
-    return new Promise((resolve, reject) => {
-      levelup(leveldown(path), options, (err, db) => {
-        if (err) {
-          debug('putOperation: error', err)
-          reject(err)
-          return
-        }
-        db.put(key, value)
-          .then(() => {
-            db.close()
-              .then(() => resolve())
-              .catch(err => reject(err))
+  return (key, value) => {
+      return new Promise((resolve, reject) => {
+        debug(`putOperation ${key}: ${path}`)
+        let db = getDbHandle(path)
+        db.put(key, value, (err, value) => {
+          if (err) {
+            return reject(err)
+          }
+          db.close((err) => {
+            if (err) {
+              return reject(err)
+            }
+            debug(`Closing key ${key}`)
+            return resolve()
           })
-          .catch(err => reject(err)) // XXX do I need to close it in this case?
+        })
       })
-    })
   }
 }
 
@@ -63,17 +71,7 @@ const putOperation = (path) => {
 // yourself when you are done.
 const openOperation = (path) => {
   return () => {
-    debug('openOperation calling on ', path)
-    return new Promise((resolve, reject) => {
-      debug('putOperation calling')
-      levelup(leveldown(path), {}, (err, db) => {
-        if (err) {
-          reject(err)
-          return
-        }
-        resolve(db)
-      })
-    })
+    return getDbHandle(path)
   }
 }
 

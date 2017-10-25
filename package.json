@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "webpack -w",
     "pack": "webpack && pkg dist/ooni.js -c package.json -o packed/ooni",
-    "rm-home-data": "rm -rf ~/.ooni/measurements && rm -rf ~/.ooni/*.ldb"
+    "clean-home": "rm -rf ~/.ooni/measurements && rm -rf ~/.ooni/*.ldb"
   },
   "pkg": {
     "scripts": [
@@ -33,6 +33,8 @@
     "fs-extra": "^4.0.2",
     "inquirer": "^3.3.0",
     "keypress": "^0.2.1",
+    "level": "^2.0.0",
+    "level-party": "^3.0.4",
     "leveldown": "^2.0.0",
     "levelup": "^2.0.0",
     "lodash": "^4.17.4",
@@ -41,6 +43,7 @@
     "mri": "^1.1.0",
     "ora": "^1.3.0",
     "pkg": "^4.2.4",
+    "prettyjson": "^1.2.1",
     "shebang-loader": "^0.0.1",
     "stream-splitter": "^0.3.2",
     "string-length": "^2.0.0",
@@ -50,6 +53,5 @@
     "wrap-ansi": "^3.0.1"
   },
   "dependencies": {
-    "prettyjson": "^1.2.1"
   }
 }

@@ -78,22 +78,19 @@ const listAction = async ctx => {
 
   const listReports = () => new Promise((resolve, reject) => {
     try {
-      openReports()
-        .then(db => {
-          const stream = db.createReadStream()
-          let reports = []
-          stream.on('data', data => {
-            debug(`${data.key}=${data.value}`)
-            let obj = JSON.parse(data.value)
-            obj.reportId = data.key.toString('utf-8')
-            reports.push(obj)
-          })
-          stream.on('close', () => {
-            resolve(reports)
-          })
-          stream.on('end', () => db.close())
-        })
-        .catch(err => reject(err))
+      let db = openReports()
+      const stream = db.createReadStream()
+      let reports = []
+      stream.on('data', data => {
+        debug(`${data.key}=${JSON.stringify(data.value)}`)
+        let obj = Object.assign({}, data.value)
+        obj.reportId = data.key.toString('utf-8')
+        reports.push(obj)
+      })
+      stream.on('close', () => {
+        resolve(reports)
+      })
+      stream.on('end', () => db.close())
     } catch (err) {
       debug('err', err)
       reject(err)
@@ -111,6 +108,9 @@ const listAction = async ctx => {
     const testInfoPad = rightPad(testInfo, 58)
     const showCommand = `${r.reportId}`
     const showCommandPad = rightPad(showCommand, 76)
+    if (!r.summary) {
+      return
+    }
 
     console.log(`  ┌─────────────┐
 ┌─│ ${testName}${testNamePad} │──────────────────────────────────────────────────────────────┐
@@ -121,7 +121,7 @@ const listAction = async ctx => {
       const linePad = rightPad(line, 76)
       console.log(`│ ${line}${linePad} │`)
     })
-    console.log('│──────────────────────────────────────────────────────────────────────────────│')
+    console.log('├──────────────────────────────────────────────────────────────────────────────┤')
     console.log('│ $ ooni show                                                                  │')
     console.log(`│ ${showCommand}${showCommandPad} │`)
     console.log('└──────────────────────────────────────────────────────────────────────────────┘')

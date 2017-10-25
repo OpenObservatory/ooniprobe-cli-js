@@ -33,7 +33,7 @@ const help = () => {
 
   ${chalk.dim('Usage:')}
 
-    ooni run [options] <>
+    ooni run [options] <test | ooni:// | https://run.ooni.io/>
 
   ${chalk.dim('Available Tests:')}
 

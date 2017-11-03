@@ -14,7 +14,7 @@ const OONI_DIR = getOoniDir()
  * Reports: are a collection of measurements
  * Measurements: are individual measurements
  */
- 
+
 const RESULTS_PATH = path.join(OONI_DIR, 'results.ldb')
 const REPORTS_PATH = path.join(OONI_DIR, 'reports.ldb')
 const MEASUREMENTS_PATH = path.join(OONI_DIR, 'measurements.ldb')
@@ -57,7 +57,7 @@ const putOperation = (path) => {
       return new Promise((resolve, reject) => {
         debug(`putOperation ${key}: ${path}`)
         let db = getDbHandle(path)
-        db.put(key, value, (err, value) => {
+        db.put(key, value, (err) => {
           if (err) {
             return reject(err)
           }

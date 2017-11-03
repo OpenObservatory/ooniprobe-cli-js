@@ -30,6 +30,7 @@ import {
 
 import NettestBase from './base'
 
+import { Ndt } from 'measurement-kit'
 const debug = require('debug')('nettests.ndt')
 
 const toMbit = (kbit) => {
@@ -59,161 +60,131 @@ class NDT extends NettestBase {
       cwd: path.join(getOoniDir(), 'resources'),
       stdio: 'pipe'
     }
-    let progressInfo = wait('starting'),
+
+    let metadata = {
+          testName: 'ndt',
+          path: this.rawMeasurementsPath
+        },
         persist = true,
-        reportPromises = []
-    const ndt = childProcess.spawn('measurement_kit', args, options)
-    const stdoutLines = ndt.stdout.pipe(StreamSplitter('\n'))
-    const stderrLines = ndt.stderr.pipe(StreamSplitter('\n'))
-    stdoutLines.on('token', (data) => {
-      const s = data.toString('utf-8')
-      debug(s)
-      let m
-      try {
-        m = /(\d+)\%\: (.*)/.exec(s)
-      } catch (err) {
-        console.log(err)
+        dbOperations = [],
+        measurementCount = 0,
+        summary = {},
+        progressInfo = null,
+        uploadMbit = null,
+        downloadMbit = null,
+        ping = null,
+        reportId = null
+
+    const ndt = Ndt()
+    ndt.on('begin', () => {
+      progressInfo = wait('0%: starting ndt')
+    })
+    ndt.on('progress', (percent, message) => {
+      persist = !(message.startsWith('upload-speed') || message.startsWith('download-speed'))
+      progressInfo && progressInfo(persist)
+      percent = Math.floor(percent * 1000)/10
+      progressInfo = wait(`${percent}%: ${message}`)
+    })
+    ndt.on('log', (severity, message) => {
+      // XXX this a workaround due to a bug in MK
+      if (message.startsWith('Report ID:')) {
+        reportId = message.split(':')[1].trim()
       }
-      if (m) {
-        progressInfo && progressInfo(persist)
-        progressInfo = wait(`${m[1]}%: ${m[2]}`)
-        persist = true
-        if (m[2].startsWith('upload-speed') || m[2].startsWith('download-speed')) {
-          persist = false
+      debug(`<${severity}> ${message}`)
+    })
+    ndt.on('entry', entry => {
+      const test_keys = entry.test_keys
+      const msmtSummary = [
+        {
+          label: 'Download',
+          value: toMbit(test_keys.simple.download),
+          unit: 'Mbit/s'
+        },
+        {
+          label: 'Upload',
+          value: toMbit(test_keys.simple.upload),
+          unit: 'Mbit/s'
+        },
+        {
+          label: 'Ping',
+          value: test_keys.simple.ping,
+          unit: 'ms'
         }
-      } else {
-        m = /(.+?)\: (.*)/.exec(s)
-        if (m && m.length === 3) {
-          this.summary[m[1]] = m[2]
-        }
+      ]
+
+      if (!metadata.country) {
+        //reportId = entry['report_id']
+        metadata['country'] = entry['probe_cc']
+        metadata['asn'] = entry['probe_asn']
+        metadata['ip'] = entry['probe_ip']
+        metadata['testStartTime'] = moment(entry.test_start_time).format(iso8601)+'Z'
+        metadata['summary'] = msmtSummary
+        dbOperations.push(putReport(reportId, metadata))
       }
+
+      // XXX extra sanity checks?
+      summary = {
+        upload: test_keys.simple.upload,
+        download: test_keys.simple.download,
+        ping: test_keys.simple.ping,
+        max_rtt: test_keys.advanced.max_rtt,
+        avg_rtt: test_keys.advanced.avg_rtt,
+        min_rtt: test_keys.advanced.min_rtt,
+        mss: test_keys.advanced.mss,
+        out_of_order: test_keys.advanced.out_of_order,
+        packet_loss: test_keys.advanced.packet_loss,
+        timeouts: test_keys.advanced.timeouts,
+      }
+      measurementCount += 1
+      // This dataformat doesn't actually work
+      dbOperations.push(putMeasurement(reportId, {
+        id: entry.id,
+        measurementCount,
+        summary: msmtSummary,
+        ok: true,
+        measurementStartTime: moment(entry.measurement_start_time).format(iso8601)+'Z'
+      }))
+      // XXX I probably have to wait on the above promise
+      dbOperations.push(getReport(reportId).then(obj => {
+        const report = Object.assign(obj, {
+          summary,
+          measurementCount,
+          ok
+        })
+        return putReport(reportId, report)
+      }))
+      debug('entry:', entry)
+    })
+    ndt.on('event', evt => {
+        debug('event:', evt)
+    })
+    ndt.on('end', () => {
+        debug('ending test')
     })
 
-    stderrLines.on('token', ((data) => {
-      const s = data.toString('utf-8')
-      if (s.startsWith('Your country:')) {
-        this.country = s.split(':')[1].trim()
-      } else if (s.startsWith('Your public IP address:')) {
-        this.ip = s.split(':')[1].trim()
-      } else if (s.startsWith('Your ASN:')) { // XXX is this correct?
-        this.asn = s.split(':')[1].trim()
-      } else if (!this.reportId && s.startsWith('Report ID:')) {
-        this.reportId = s.split(':')[1].trim()
-        debug('calling putReport')
-        reportPromises.push(putReport(this.reportId, {
-          asn: this.asn,
-          country: this.country,
-          ip: this.ip,
-          testName: 'ndt',
-          path: this.rawMeasurementsPath,
-        }))
-      }
-      debug('err', s)
-    }).bind(this))
-
-    const printSummary = () => {
+    const printSummary = (summary) => {
       progressInfo && progressInfo()
       console.log('')
 
-      const summary = this.summary
-      const speedRe = /\d+\.?\d*/
-      const uploadMbit = toMbit(speedRe.exec(summary['Upload speed'])[0])
-      const downloadMbit = toMbit(speedRe.exec(summary['Download speed'])[0])
-      const ping = /(.*?) ms/.exec(summary['RTT (min/avg/max)'])[1]
+      const uploadMbit = toMbit(summary.upload)
+      const downloadMbit = toMbit(summary.download)
+      const ping = Math.round(summary.ping*10)/10
+      const packetLoss = Math.round(summary.packet_loss * 100 * 100)/100
+      const outOfOrder = Math.round(summary.out_of_order * 100 * 100)/100
+      const mss = summary.mss
+      const timeouts = summary.timeouts
       console.log(`    ${chalk.bold('Download')}: ${chalk.cyan(uploadMbit)} ${chalk.dim('Mbit/s')}`)
       console.log(`      ${chalk.bold('Upload')}: ${chalk.cyan(downloadMbit)} ${chalk.dim('Mbit/s')}`)
       console.log(`        ${chalk.bold('Ping')}: ${chalk.cyan(ping)} ${chalk.dim('ms')} ${chalk.dim('(min/avg/max)')}`)
-      console.log(` ${chalk.bold('Packet loss')}: ${chalk.cyan(summary['Packet loss rate'])}`)
-      console.log(`${chalk.bold('Out of order')}: ${chalk.cyan(summary['Out of order'])}`)
-      console.log(`         ${chalk.bold('MSS')}: ${chalk.cyan(summary['MSS'])}`)
-      console.log(`    ${chalk.bold('Timeouts')}: ${chalk.cyan(summary['Timeouts'])}`)
+      console.log(` ${chalk.bold('Packet loss')}: ${chalk.cyan(packetLoss)}`)
+      console.log(`${chalk.bold('Out of order')}: ${chalk.cyan(outOfOrder)}`)
+      console.log(`         ${chalk.bold('MSS')}: ${chalk.cyan(mss)}`)
+      console.log(`    ${chalk.bold('Timeouts')}: ${chalk.cyan(timeouts)}`)
     }
 
-    const updateDb = (() => {
-      const reportId = this.reportId
-      return new Promise((resolve, reject) => {
-        getReport(reportId)
-          .then(value => {
-            try {
-              const obj = Object.assign({}, value)
-              let promises = [],
-                  testStartTime,
-                  measurementCount = 0,
-                  reportOk = true,
-                  summary = {}
-              debug('got object', JSON.stringify(obj))
-              const stream = fs.createReadStream(obj.path).pipe(StreamSplitter("\n"))
-              stream.on('token', line => {
-                const msmt = JSON.parse(line)
-
-                let ok = true
-                let msmtKey = msmt.report_id
-                if (msmt.input) {
-                  msmtKey += `?${msmt.input}`
-                }
-                let measurementStartTime = moment(msmt.measurement_start_time).format(iso8601)+'Z'
-
-                testStartTime = moment(msmt.test_start_time).format(iso8601)+'Z'
-                measurementCount += 1
-                reportOk = true
-                summary = [
-                  {
-                    label: 'Download',
-                    value: toMbit(msmt.test_keys.simple.download),
-                    unit: 'Mbit/s'
-                  },
-                  {
-                    label: 'Upload',
-                    value: toMbit(msmt.test_keys.simple.upload),
-                    unit: 'Mbit/s'
-                  },
-                  {
-                    label: 'Ping',
-                    value: msmt.test_keys.simple.ping,
-                    unit: 'ms'
-                  }
-                ]
-                promises.push(putMeasurement(msmtKey, {
-                  id: msmt.id,
-                  measurementCount,
-                  summary,
-                  measurementStartTime,
-                  ok
-                }))
-              })
-              stream.on('done', () => {
-                const report = Object.assign(obj, {
-                  testStartTime,
-                  summary,
-                  measurementCount,
-                  ok
-                })
-                Promise.all(promises)
-                  .then(() => {
-                    putReport(reportId, report)
-                  })
-                  .catch(err => reject(err))
-              })
-            } catch(err) {
-              return reject(err)
-            }
-          })
-      })
-    }).bind(this)
-
-    await new Promise((resolve, reject) => {
-      ndt.on('close', () => {
-        // Better safe than sorry
-        Promise.all(reportPromises)
-          .then(() => {
-            printSummary()
-            updateDb()
-              .then(() => resolve())
-              .catch(err => reject(err))
-          })
-          .catch(err => reject(err))
-      })
-    })
+    await ndt.run()
+    printSummary(summary)
+    await Promise.all(dbOperations)
   }
 
   static get help() {

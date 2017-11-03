@@ -53,5 +53,6 @@
     "wrap-ansi": "^3.0.1"
   },
   "dependencies": {
+    "measurement-kit": "^0.1.0-alpha.1"
   }
 }

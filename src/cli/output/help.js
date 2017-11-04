@@ -16,6 +16,10 @@ const commands = [
     description: 'Upload to a collector the specified measurement collection'
   },
   {
+    name: 'run',
+    description: 'Run a particular set of nettests'
+  },
+  {
     name: 'listen',
     description: 'Listen to the orchestrator for things to do'
   },

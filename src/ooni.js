@@ -22,11 +22,10 @@ const OONI_CONFIG_PATH = getConfigFilePath()
 
 const main = async (argv_) => {
   const argv = mri(argv_, {
-    boolean: ['help', 'version'],
+    boolean: ['help', 'version', 'verbose'],
     string: [],
     alias: {
-      help: 'h',
-      version: 'v'
+      help: 'h'
     }
   })
 
@@ -140,6 +139,9 @@ const main = async (argv_) => {
   switch(subcommand) {
     case 'run': {
       return commands.run(ctx)
+    }
+    case 'show': {
+      return commands.show(ctx)
     }
     case 'nt':
     case 'nettest': {

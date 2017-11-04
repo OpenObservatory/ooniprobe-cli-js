@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "webpack -w",
-    "pack": "webpack && pkg dist/ooni.js -c package.json -o packed/ooni"
+    "pack": "webpack && pkg dist/ooni.js -c package.json -o packed/ooni",
+    "clean-home": "rm -rf ~/.ooni/measurements && rm -rf ~/.ooni/*.ldb"
   },
   "pkg": {
     "scripts": [
@@ -25,20 +26,33 @@
     "babel-preset-es2015": "^6.24.1",
     "camelcase": "^4.1.0",
     "chalk": "^2.1.0",
+    "child-process-promise": "^2.2.1",
     "copy-webpack-plugin": "^4.1.0",
+    "debug": "^3.1.0",
     "flow-babel-webpack-plugin": "^1.1.0",
     "fs-extra": "^4.0.2",
     "inquirer": "^3.3.0",
+    "keypress": "^0.2.1",
+    "level": "^2.0.0",
+    "level-party": "^3.0.4",
+    "leveldown": "^2.0.0",
+    "levelup": "^2.0.0",
+    "lodash": "^4.17.4",
     "lodash.range": "^3.2.0",
+    "moment": "^2.19.1",
     "mri": "^1.1.0",
     "ora": "^1.3.0",
     "pkg": "^4.2.4",
+    "prettyjson": "^1.2.1",
     "shebang-loader": "^0.0.1",
+    "stream-splitter": "^0.3.2",
     "string-length": "^2.0.0",
     "webpack": "^3.6.0",
     "webpack-node-externals": "^1.6.0",
+    "window-size": "^1.1.0",
     "wrap-ansi": "^3.0.1"
   },
   "dependencies": {
+    "measurement-kit": "^0.1.0-alpha.1"
   }
 }

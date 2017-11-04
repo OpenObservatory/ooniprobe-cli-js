@@ -1,15 +1,17 @@
 import ora from 'ora'
 import { gray } from 'chalk'
-import eraseLines from './erase-lines'
 
 const wait = msg => {
   const spinner = ora(gray(msg))
   spinner.color = 'gray'
   spinner.start()
 
-  return () => {
-    spinner.stop()
-    process.stdout.write(eraseLines(1))
+  return (persist = true, options = {symbol: ' '}) => {
+    if (persist) {
+      spinner.stopAndPersist(options)
+    } else {
+      spinner.stop()
+    }
   }
 }
 export default wait

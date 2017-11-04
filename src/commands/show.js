@@ -1,7 +1,8 @@
-import _ from 'lodash'
 import mri from 'mri'
-import range from 'lodash.range'
+import * as fs from 'fs-extra'
 
+import StreamSplitter from 'stream-splitter'
+import prettyjson from 'prettyjson'
 import chalk from 'chalk'
 import moment from 'moment'
 
@@ -14,20 +15,15 @@ import error from '../cli/output/error'
 import optionPad from '../cli/output/option-pad'
 import rightPad from '../cli/output/right-pad'
 import labelValue from '../cli/output/label-value'
-import testResults from '../cli/output/test-results'
 import icons from '../cli/output/icons'
+import pager from '../cli/output/pager'
 
 import exit from '../util/exit'
 
 import nettests from '../nettests'
 
 import {
-  getMeasurement,
-  putMeasurement,
-  openMeasurements,
-  getReport,
-  putReport,
-  openReports,
+  getReport
 } from '../config/db'
 
 const debug = require('debug')('commands.list')
@@ -37,6 +33,10 @@ const help = () => {
       {
         option: '-h, --help',
         description: 'Display usage information'
+      },
+      {
+        option: '    --no-pager',
+        description: 'Disable pager'
       }
   ]
 
@@ -45,7 +45,7 @@ const help = () => {
 
   ${chalk.dim('Usage:')}
 
-    ooni list [options]
+    ooni show [options] <report_id | measurement_id>
 
   ${chalk.dim('Options:')}
 
@@ -57,9 +57,9 @@ const help = () => {
 // Define these as module level variables so we don't have to pass them along
 let argv
 let subcommand
-const listAction = async ctx => {
+const main = async ctx => {
   argv = mri(ctx.argv.slice(2), {
-    boolean: ['help'],
+    boolean: ['help', 'no-pager'],
     alias: {
       help: 'h'
     }
@@ -76,31 +76,28 @@ const listAction = async ctx => {
     help()
     await exit(0)
   }
-
-  const listReports = () => new Promise((resolve, reject) => {
-    try {
-      let db = openReports()
-      const stream = db.createReadStream()
-      let reports = []
-      stream.on('data', data => {
-        debug(`${data.key}=${JSON.stringify(data.value)}`)
-        let obj = Object.assign({}, data.value)
-        obj.reportId = data.key.toString('utf-8')
-        reports.push(obj)
+  if (!subcommand) {
+    console.log(error('Did not specific a report id or measurement id'))
+    help()
+    await exit(1)
+  }
+  let readReport = new Promise((resolve, reject) => {
+    getReport(subcommand)
+      .then(value => {
+        const obj = JSON.parse(value)
+        const stream = fs.createReadStream(obj.path).pipe(StreamSplitter("\n"))
+        stream.on('token', line => {
+          const msmt = JSON.parse(line)
+          if (argv['pager'] === false) {
+            console.log(prettyjson.render(msmt))
+          } else {
+            pager(prettyjson.render(msmt))
+              .then(() => resolve())
+          }
+        })
       })
-      stream.on('close', () => {
-        resolve(reports)
-      })
-      stream.on('end', () => db.close())
-    } catch (err) {
-      debug('err', err)
-      reject(err)
-    }
   })
-
-  const reports = await listReports()
-  debug('reports', reports)
-  console.log(testResults(reports))
+  await readReport
   await exit(1)
 }
-export default listAction
+export default main

@@ -1,7 +1,7 @@
-import { readFileSync, writeFileSync } from 'fs'
+import * as fs from 'fs-extra'
 import path from 'path'
 
-import level from 'level-party'
+import Sequelize from 'sequelize'
 
 import { getOoniDir } from './global-path'
 
@@ -9,91 +9,64 @@ const debug = require('debug')('config.db')
 
 const OONI_DIR = getOoniDir()
 
-/*
- * Results: are many reports run via the ooni run
- * Reports: are a collection of measurements
- * Measurements: are individual measurements
- */
+const DB_DIR = path.join(OONI_DIR, 'db')
 
-const RESULTS_PATH = path.join(OONI_DIR, 'results.ldb')
-const REPORTS_PATH = path.join(OONI_DIR, 'reports.ldb')
-const MEASUREMENTS_PATH = path.join(OONI_DIR, 'measurements.ldb')
-const STATS_PATH = path.join(OONI_DIR, 'stats.ldb')
+export const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: path.join(DB_DIR, 'main.sqlite3'),
+  logging: debug,
+  operatorsAliases: false
+})
 
-const levelOptions = {
-  valueEncoding: 'json'
+/* Models */
+export const Measurement = sequelize.define('measurement', {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: Sequelize.STRING,
+  date: Sequelize.DATE,
+  dataUsage: Sequelize.INTEGER,
+  // This is an opaque JSON that is test dependent
+  summary: Sequelize.JSON,
+
+  ip: Sequelize.STRING,
+  asn: Sequelize.INTEGER,
+  country: Sequelize.STRING(2),
+  networkName: Sequelize.STRING,
+  // The possible states of a measurements are:
+  // * active, while the measurement is in progress
+  // * done, when it's finished, but not necessarily uploaded
+  // * uploaded, if it has been uploaded successfully
+  // * processed, if the pipeline has processed the measurement
+  state: {
+    type: Sequelize.ENUM,
+    values: ['active', 'done', 'uploaded', 'processed']
+  },
+  failure: Sequelize.STRING,
+
+  reportFile: Sequelize.STRING,
+  reportId: Sequelize.STRING,
+  input: Sequelize.STRING
+})
+
+export const Result = sequelize.define('result', {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: Sequelize.STRING,
+  date: Sequelize.DATE,
+  summary: Sequelize.JSON,
+  done: Sequelize.BOOLEAN
+})
+Result.hasMany(Measurement, { as: 'Measurements' })
+
+export const initDb = async () => {
+  await fs.ensureDir(DB_DIR)
+  await sequelize.sync()
 }
 
-let handles = {}
-const getDbHandle = (path) => {
-  debug(`Getting a DB handle for ${path}`)
-  if (handles[path]) {
-    return handles[path]
-  }
-  handles[path] = level(path, levelOptions)
-  return handles[path]
-}
-
-/* These functions take care of performing operations on the database and then
-/* closing it.
- */
-const getOperation = (path) => {
-  return (key) => {
-    return new Promise((resolve, reject) => {
-      debug(`getOperation ${key}: ${path}`)
-      let db = getDbHandle(path)
-      db.get(key, {}, (err, value) => {
-        if (err) {
-          return reject(err)
-        }
-        return resolve(value)
-      })
-    })
-  }
-}
-
-const putOperation = (path) => {
-  return (key, value) => {
-      return new Promise((resolve, reject) => {
-        debug(`putOperation ${key}: ${path}`)
-        let db = getDbHandle(path)
-        db.put(key, value, (err) => {
-          if (err) {
-            return reject(err)
-          }
-          return resolve()
-        })
-      })
-  }
-}
-
-// When you use this function, you a responsible for closing the database
-// yourself when you are done.
-const openOperation = (path) => {
-  return () => {
-    return getDbHandle(path)
-  }
-}
-
-export const getMeasurement = getOperation(MEASUREMENTS_PATH)
-
-export const putMeasurement = putOperation(MEASUREMENTS_PATH)
-
-export const openMeasurements = openOperation(MEASUREMENTS_PATH)
-
-export const getReport = getOperation(REPORTS_PATH)
-
-export const putReport = putOperation(REPORTS_PATH)
-
-export const openReports = openOperation(REPORTS_PATH)
-
-export const operations = {
-  getMeasurement,
-  putMeasurement,
-  openMeasurements,
-  getReport,
-  putReport,
-  openReports,
-}
-
-export default operations
+export default initDb

@@ -16,6 +16,7 @@ import rightPad from '../cli/output/right-pad'
 import labelValue from '../cli/output/label-value'
 import testResults from '../cli/output/test-results'
 import icons from '../cli/output/icons'
+import toMbit from '../cli/output/to-mbit'
 
 import exit from '../util/exit'
 
@@ -80,8 +81,8 @@ const listAction = async ctx => {
     const dataUsageCount = '10 MB'
     console.log(testResults(result.rows, msmtsCount, networksCount, dataUsageCount, ({upload, download}) => {
       return [
-        labelValue('Up', Math.floor(upload/1000)/10, {unit: 'Mbit'}),
-        labelValue('Down', Math.floor(download/1000)/10, {unit: 'Mbit'}),
+        labelValue('Up', toMbit(upload), {unit: 'Mbit'}),
+        labelValue('Down', toMbit(download), {unit: 'Mbit'}),
       ]
     }))
   }

@@ -17,6 +17,7 @@ import error from '../cli/output/error'
 
 import nettestHelp from '../cli/output/nettest-help'
 import rightPad from '../cli/output/right-pad'
+import toMbit from '../cli/output/to-mbit'
 
 import sleep from '../util/sleep'
 
@@ -30,13 +31,6 @@ import NettestBase from './base'
 
 import { Ndt } from 'measurement-kit'
 const debug = require('debug')('nettests.ndt')
-
-const toMbit = (kbit) => {
-  if (typeof kbit === 'string') {
-    kbit = parseFloat(kbit)
-  }
-  return Math.round(kbit/1024*100)/100
-}
 
 class NDT extends NettestBase {
   static get name() {

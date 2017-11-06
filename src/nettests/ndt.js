@@ -63,7 +63,8 @@ class NDT extends NettestBase {
         progressInfo = null,
         uploadMbit = null,
         downloadMbit = null,
-        reportId = null
+        reportId = null,
+        localReportId = null
 
     const ndt = Ndt()
 
@@ -82,6 +83,7 @@ class NDT extends NettestBase {
     })
     ndt.on('log', (severity, message) => {
       // XXX this a workaround due to a bug in MK
+      // I actually also need to know if the report has been created
       if (message.startsWith('Report ID:') && reportId === null) {
         reportId = message.split(':')[1].trim()
         dbOperations.push(measurement.update({
@@ -93,13 +95,23 @@ class NDT extends NettestBase {
     ndt.on('entry', entry => {
       const test_keys = entry.test_keys
       if (!measurement.country) {
-        // XXX This is a big of a hack
-        //reportId = entry['report_id']
+        // XXX This is a bit of a hack
+        // When we don't have a reportId with the collector we set the
+        // localReportId to the first measurement id.
+        // When I have proper ways of handling this:
+        // * https://github.com/measurement-kit/measurement-kit/issues/1469
+        // * https://github.com/measurement-kit/measurement-kit/issues/1462
+        // This should be a bit cleaner
+        if (localReportId === null) {
+          localReportId = reportId !== null ? reportId : `LOCAL-${entry.id}`
+        }
         dbOperations.push(measurement.update({
+          reportId: localReportId,
           country: entry['probe_cc'],
           asn: entry['probe_asn'],
           ip: entry['probe_ip'],
-          date: moment(entry['measurement_start_time']),
+          date: moment(entry['measurement_start_time'] + 'Z').toDate(), // We append the Z to make moment understand it's UTC
+          state: reportId !== null ? 'uploaded' : 'done', // XXX Here I make the assumption that either it all failed or not. This is wrong.
           summary: {
             upload: test_keys.simple['upload'],
             download: test_keys.simple['download'],
@@ -119,12 +131,6 @@ class NDT extends NettestBase {
       debug('event:', evt)
     })
     ndt.on('end', () => {
-      // XXX is there something better to check if the measurement is
-      // uploaded?
-      const state = reportId === null ? 'done' : 'uploaded'
-      dbOperations.push(measurement.update({
-        state: state
-      }))
       debug('ending test')
     })
 

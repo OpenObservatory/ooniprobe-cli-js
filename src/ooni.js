@@ -4,11 +4,8 @@ import mri from 'mri'
 
 import { blue, bold } from 'chalk'
 
-import commands from './commands'
 import logo from './cli/output/logo'
 import error from './cli/output/error'
-import getDefaultConfig from './get-default-config'
-import doOnboarding from './do-onboarding'
 
 import { getOoniDir } from './config/global-path'
 import {
@@ -16,10 +13,6 @@ import {
   readConfigFile,
   writeToConfigFile
 } from './config/config-files'
-
-import {
-  initDb
-} from './config/db'
 
 const OONI_DIR = getOoniDir()
 const OONI_CONFIG_PATH = getConfigFilePath()
@@ -35,10 +28,11 @@ const main = async (argv_) => {
 
   let subcommand = argv._[2]
 
-  if (!subcommand && argv.help) {
+  if ((!subcommand && argv.help) || (subcommand === 'help' && !argv._[3])) {
     console.log(require('./cli/output/help.js'))
     return 0
   }
+
   if (argv.version || subcommand === 'version') {
     console.log(require('../package').version)
     return 0
@@ -50,6 +44,15 @@ const main = async (argv_) => {
     return 1
   }
 
+  // We import these modules later to make the CLI snappier
+  const commands = require('./commands').default
+  const initDb = require('./config/db').default
+  const doOnboarding = require('./do-onboarding').default
+  const getDefaultConfig = require('./get-default-config').default
+
+  // Create the database if it doesn't exist
+  // XXX maybe we can chain these two so they are a bit faster
+  await initDb()
   // We do it now since we may have to perform a migration too
   let config = await getDefaultConfig()
 
@@ -127,9 +130,6 @@ const main = async (argv_) => {
     }
   }
 
-  // Create the database if it doesn't exist
-  await initDb()
-
   const ctx = {
     argv: argv_
   }
@@ -137,10 +137,6 @@ const main = async (argv_) => {
   if (subcommand === 'help' && argv._[3]) {
     subcommand = argv._[3]
     ctx.argv.push('-h')
-  }
-  else if (subcommand === 'help' && !argv._[3]){
-    console.log(require('./cli/output/help.js'))
-    return 0
   }
 
   switch(subcommand) {

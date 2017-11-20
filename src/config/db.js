@@ -1,15 +1,21 @@
 import * as fs from 'fs-extra'
 import path from 'path'
 
+import moment from 'moment'
 import Sequelize from 'sequelize'
 
 import { getOoniDir } from './global-path'
+import iso8601 from '../util/iso8601'
 
 const debug = require('debug')('config.db')
 
 const OONI_DIR = getOoniDir()
 
 const DB_DIR = path.join(OONI_DIR, 'db')
+
+const randInt = (min, max) => {
+  return Math.floor(Math.random() * max - min) + min
+}
 
 export const sequelize = new Sequelize({
   dialect: 'sqlite',
@@ -50,6 +56,15 @@ export const Measurement = sequelize.define('measurement', {
   reportId: Sequelize.STRING,
   input: Sequelize.STRING
 })
+
+Measurement.prototype.makeReportFile = () => {
+  return path.join(
+    OONI_DIR,
+    'measurements',
+    'raw',
+    `${moment.utc().format(iso8601)}Z-${this.name}-${randInt(10, 90)}.jsonl`
+  )
+}
 
 export const Result = sequelize.define('result', {
   id: {

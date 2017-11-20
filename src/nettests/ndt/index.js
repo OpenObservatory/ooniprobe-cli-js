@@ -48,43 +48,16 @@ const makeSummary = (test_keys) => {
 }
 
 exports.run = (ooni) => {
-  /*
-  XXX be sure this is done by the caller
-  let measurement = ooni.Measurement.build({
-    name: 'ndt',
-    state: 'active',
-    reportFile: ooni.makeReportFilePath()
-  })
-  dbOperations.push(measurement.save())
-  */
-
   const ndt = Ndt()
-  /*
-  XXX ensure this is done by the caller
-  ndt.test.set_options('no_file_report', '0')
-  ndt.test.set_output_filepath(measurement.reportFile)
-  */
-  ooni.setMeasurementKitOptions(ndt)
+  ooni.init(ndt)
 
-  ndt.on('begin', () => {
-    ooni.onProgress(0.0, 'starting ndt')
-  })
+  ndt.on('begin', () => ooni.onProgress(0.0, 'starting ndt'))
   ndt.on('progress', (percent, message) => {
     persist = !(message.startsWith('upload-speed') || message.startsWith('download-speed'))
     ooni.onProgress(percent, message, persist)
   })
+
   ndt.on('log', (severity, message) => {
-    // XXX this a workaround due to a bug in MK
-    // I actually also need to know if the report has been created
-    if (message.startsWith('Report ID:') && reportId === null) {
-      ooni.setReportId(message.split(':')[1].trim())
-      /*
-      XXX ensure the above does the following
-      dbOperations.push(measurement.update({
-        reportId: reportId
-      }))
-      */
-    }
     debug(`<${severity}> ${message}`)
   })
   ndt.on('entry', entry => {
@@ -97,5 +70,5 @@ exports.run = (ooni) => {
     debug('ending test')
   })
 
-  return ndt.run()
+  return ooni.run(ndt.run)
 }

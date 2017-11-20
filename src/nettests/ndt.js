@@ -3,11 +3,11 @@ import path from 'path'
 import * as fs from 'fs-extra'
 
 import chalk from 'chalk'
-import moment from 'moment'
 import childProcess from 'child_process'
 import { spawn } from 'child-process-promise'
 import StreamSplitter from 'stream-splitter'
 
+import moment from 'moment'
 import iso8601 from '../util/iso8601'
 
 import wait from '../cli/output/wait'
@@ -43,6 +43,7 @@ class NDT extends NettestBase {
 
   async run(argv) {
     await super.run(argv)
+
     let dbOperations = []
 
     let measurement = Measurement.build({

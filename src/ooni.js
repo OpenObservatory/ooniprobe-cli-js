@@ -17,6 +17,10 @@ import {
   writeToConfigFile
 } from './config/config-files'
 
+import {
+  initDb
+} from './config/db'
+
 const OONI_DIR = getOoniDir()
 const OONI_CONFIG_PATH = getConfigFilePath()
 
@@ -122,6 +126,9 @@ const main = async (argv_) => {
       return 1
     }
   }
+
+  // Create the database if it doesn't exist
+  await initDb()
 
   const ctx = {
     argv: argv_

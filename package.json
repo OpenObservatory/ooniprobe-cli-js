@@ -33,10 +33,6 @@
     "fs-extra": "^4.0.2",
     "inquirer": "^3.3.0",
     "keypress": "^0.2.1",
-    "level": "^2.0.0",
-    "level-party": "^3.0.4",
-    "leveldown": "^2.0.0",
-    "levelup": "^2.0.0",
     "lodash": "^4.17.4",
     "lodash.range": "^3.2.0",
     "moment": "^2.19.1",
@@ -53,6 +49,8 @@
     "wrap-ansi": "^3.0.1"
   },
   "dependencies": {
-    "measurement-kit": "^0.1.0-alpha.1"
+    "measurement-kit": "^0.1.0-alpha.1",
+    "sequelize": "^4.22.5",
+    "sqlite3": "^3.1.13"
   }
 }

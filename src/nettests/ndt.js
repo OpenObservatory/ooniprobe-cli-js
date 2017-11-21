@@ -17,28 +17,20 @@ import error from '../cli/output/error'
 
 import nettestHelp from '../cli/output/nettest-help'
 import rightPad from '../cli/output/right-pad'
+import toMbit from '../cli/output/to-mbit'
 
 import sleep from '../util/sleep'
 
 import { getOoniDir } from '../config/global-path'
 import {
-  getMeasurement,
-  putMeasurement,
-  getReport,
-  putReport,
+  Result,
+  Measurement
 } from '../config/db'
 
 import NettestBase from './base'
 
 import { Ndt } from 'measurement-kit'
 const debug = require('debug')('nettests.ndt')
-
-const toMbit = (kbit) => {
-  if (typeof kbit === 'string') {
-    kbit = parseFloat(kbit)
-  }
-  return Math.round(kbit/1024*100)/100
-}
 
 class NDT extends NettestBase {
   static get name() {
@@ -51,31 +43,29 @@ class NDT extends NettestBase {
 
   async run(argv) {
     await super.run(argv)
-    const args = [
-      '-o',
-      this.rawMeasurementsPath,
-      'ndt'
-    ]
-    const options = {
-      cwd: path.join(getOoniDir(), 'resources'),
-      stdio: 'pipe'
-    }
+    let dbOperations = []
 
-    let metadata = {
-          testName: 'ndt',
-          path: this.rawMeasurementsPath
-        },
-        persist = true,
-        dbOperations = [],
-        measurementCount = 0,
+    let measurement = Measurement.build({
+      name: 'ndt',
+      state: 'active',
+      reportFile: this.rawMeasurementsPath
+    })
+    dbOperations.push(measurement.save())
+
+    let persist = true,
         summary = {},
         progressInfo = null,
         uploadMbit = null,
         downloadMbit = null,
-        ping = null,
-        reportId = null
+        reportId = null,
+        localReportId = null
 
     const ndt = Ndt()
+
+    // XXX this is a hack while I wait for https://github.com/measurement-kit/measurement-kit-node/pull/4
+    ndt.test.set_options('no_file_report', '0')
+    ndt.test.set_output_filepath(this.rawMeasurementsPath)
+
     ndt.on('begin', () => {
       progressInfo = wait('0%: starting ndt')
     })
@@ -87,79 +77,55 @@ class NDT extends NettestBase {
     })
     ndt.on('log', (severity, message) => {
       // XXX this a workaround due to a bug in MK
-      if (message.startsWith('Report ID:')) {
+      // I actually also need to know if the report has been created
+      if (message.startsWith('Report ID:') && reportId === null) {
         reportId = message.split(':')[1].trim()
+        dbOperations.push(measurement.update({
+          reportId: reportId
+        }))
       }
       debug(`<${severity}> ${message}`)
     })
     ndt.on('entry', entry => {
       const test_keys = entry.test_keys
-      const msmtSummary = [
-        {
-          label: 'Download',
-          value: toMbit(test_keys.simple.download),
-          unit: 'Mbit/s'
-        },
-        {
-          label: 'Upload',
-          value: toMbit(test_keys.simple.upload),
-          unit: 'Mbit/s'
-        },
-        {
-          label: 'Ping',
-          value: test_keys.simple.ping,
-          unit: 'ms'
+      if (!measurement.country) {
+        // XXX This is a bit of a hack
+        // When we don't have a reportId with the collector we set the
+        // localReportId to the first measurement id.
+        // When I have proper ways of handling this:
+        // * https://github.com/measurement-kit/measurement-kit/issues/1469
+        // * https://github.com/measurement-kit/measurement-kit/issues/1462
+        // This should be a bit cleaner
+        if (localReportId === null) {
+          localReportId = reportId !== null ? reportId : `LOCAL-${entry.id}`
         }
-      ]
-
-      if (!metadata.country) {
-        //reportId = entry['report_id']
-        metadata['country'] = entry['probe_cc']
-        metadata['asn'] = entry['probe_asn']
-        metadata['ip'] = entry['probe_ip']
-        metadata['testStartTime'] = moment(entry.test_start_time).format(iso8601)+'Z'
-        metadata['summary'] = msmtSummary
-        dbOperations.push(putReport(reportId, metadata))
+        dbOperations.push(measurement.update({
+          reportId: localReportId,
+          country: entry['probe_cc'],
+          asn: entry['probe_asn'],
+          ip: entry['probe_ip'],
+          date: moment(entry['measurement_start_time'] + 'Z').toDate(), // We append the Z to make moment understand it's UTC
+          state: reportId !== null ? 'uploaded' : 'done', // XXX Here I make the assumption that either it all failed or not. This is wrong.
+          summary: {
+            upload: test_keys.simple['upload'],
+            download: test_keys.simple['download'],
+            ping: test_keys.simple['ping'],
+            maxRtt: test_keys.advanced['max_rtt'],
+            avgRtt: test_keys.advanced['avg_rtt'],
+            minRtt: test_keys.advanced['min_rtt'],
+            mss: test_keys.advanced['mss'],
+            outOfOrder: test_keys.advanced['out_of_order'],
+            packetLoss: test_keys.advanced['packet_loss'],
+            timeouts: test_keys.advanced['timeouts'],
+          }
+        }))
       }
-
-      // XXX extra sanity checks?
-      summary = {
-        upload: test_keys.simple.upload,
-        download: test_keys.simple.download,
-        ping: test_keys.simple.ping,
-        max_rtt: test_keys.advanced.max_rtt,
-        avg_rtt: test_keys.advanced.avg_rtt,
-        min_rtt: test_keys.advanced.min_rtt,
-        mss: test_keys.advanced.mss,
-        out_of_order: test_keys.advanced.out_of_order,
-        packet_loss: test_keys.advanced.packet_loss,
-        timeouts: test_keys.advanced.timeouts,
-      }
-      measurementCount += 1
-      // This dataformat doesn't actually work
-      dbOperations.push(putMeasurement(reportId, {
-        id: entry.id,
-        measurementCount,
-        summary: msmtSummary,
-        ok: true,
-        measurementStartTime: moment(entry.measurement_start_time).format(iso8601)+'Z'
-      }))
-      // XXX I probably have to wait on the above promise
-      dbOperations.push(getReport(reportId).then(obj => {
-        const report = Object.assign(obj, {
-          summary,
-          measurementCount,
-          ok
-        })
-        return putReport(reportId, report)
-      }))
-      debug('entry:', entry)
     })
     ndt.on('event', evt => {
-        debug('event:', evt)
+      debug('event:', evt)
     })
     ndt.on('end', () => {
-        debug('ending test')
+      debug('ending test')
     })
 
     const printSummary = (summary) => {
@@ -169,8 +135,8 @@ class NDT extends NettestBase {
       const uploadMbit = toMbit(summary.upload)
       const downloadMbit = toMbit(summary.download)
       const ping = Math.round(summary.ping*10)/10
-      const packetLoss = Math.round(summary.packet_loss * 100 * 100)/100
-      const outOfOrder = Math.round(summary.out_of_order * 100 * 100)/100
+      const packetLoss = Math.round(summary.packetLoss * 100 * 100)/100
+      const outOfOrder = Math.round(summary.outOfOrder * 100 * 100)/100
       const mss = summary.mss
       const timeouts = summary.timeouts
       console.log(`    ${chalk.bold('Download')}: ${chalk.cyan(uploadMbit)} ${chalk.dim('Mbit/s')}`)
@@ -183,8 +149,9 @@ class NDT extends NettestBase {
     }
 
     await ndt.run()
-    printSummary(summary)
+    printSummary(measurement.summary)
     await Promise.all(dbOperations)
+    return measurement
   }
 
   static get help() {

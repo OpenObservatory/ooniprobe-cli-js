@@ -16,18 +16,15 @@ import rightPad from '../cli/output/right-pad'
 import labelValue from '../cli/output/label-value'
 import testResults from '../cli/output/test-results'
 import icons from '../cli/output/icons'
+import toMbit from '../cli/output/to-mbit'
 
 import exit from '../util/exit'
 
 import nettests from '../nettests'
 
 import {
-  getMeasurement,
-  putMeasurement,
-  openMeasurements,
-  getReport,
-  putReport,
-  openReports,
+  Measurement,
+  Report
 } from '../config/db'
 
 const debug = require('debug')('commands.list')
@@ -45,7 +42,7 @@ const help = () => {
 
   ${chalk.dim('Usage:')}
 
-    ooni list [options]
+    ooni list|ls [ <options> ] [ measurements|msmts ]
 
   ${chalk.dim('Options:')}
 
@@ -77,30 +74,27 @@ const listAction = async ctx => {
     await exit(0)
   }
 
-  const listReports = () => new Promise((resolve, reject) => {
-    try {
-      let db = openReports()
-      const stream = db.createReadStream()
-      let reports = []
-      stream.on('data', data => {
-        debug(`${data.key}=${JSON.stringify(data.value)}`)
-        let obj = Object.assign({}, data.value)
-        obj.reportId = data.key.toString('utf-8')
-        reports.push(obj)
-      })
-      stream.on('close', () => {
-        resolve(reports)
-      })
-      stream.on('end', () => db.close())
-    } catch (err) {
-      debug('err', err)
-      reject(err)
-    }
-  })
+  const listMeasurements = async () => {
+    const result = await Measurement.findAndCountAll({group: 'reportId'})
+    const msmtsCount = 42
+    const networksCount = 3
+    const dataUsageCount = '10 MB'
+    console.log(testResults(result.rows, msmtsCount, networksCount, dataUsageCount, ({upload, download}) => {
+      return [
+        labelValue('Up', toMbit(upload), {unit: 'Mbit'}),
+        labelValue('Down', toMbit(download), {unit: 'Mbit'}),
+      ]
+    }))
+  }
 
-  const reports = await listReports()
-  debug('reports', reports)
-  console.log(testResults(reports))
+  const listReports = () => {
+  }
+
+  if (subcommand === 'measurements' || subcommand === 'msmts') {
+    await listMeasurements()
+  } else {
+    await listResults()
+  }
   await exit(1)
 }
 export default listAction

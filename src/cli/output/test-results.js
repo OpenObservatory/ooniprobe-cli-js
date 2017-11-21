@@ -53,20 +53,20 @@ import labelValue from './label-value'
  ╰──────────────┴──────────────┴──────────────╯
 */
 
-const testResults = (results) => {
+const testResults = (results, msmtsCount, networkCount, dataUsage, summaryFormat) => {
   const colWidth = 50
   let o = '┏' + '━'.repeat(colWidth) + '┓\n'
   let contentRows = results
-            .filter(r => r.summary)
-            .map((r, idx) => {
+            .map(r => {
               let innerWidth = colWidth - 2
               let rows = []
-              const summary = r.summary.map(s => {
-                return labelValue(s.label, s.value, {unit: s.unit})
-              })
-              let firstRow = `${chalk.bold(`#${idx}`)} - ${moment(r.testStartTime).fromNow()}`
+              const summary = summaryFormat(r.summary)
+              //.map(s => {
+              //  return labelValue(s.label, s.value, {unit: s.unit})
+              //})
+              let firstRow = `${chalk.bold(`#${r.id}`)} - ${moment(r.date).fromNow()}`
               firstRow += rightPad(firstRow, innerWidth)
-              let secondRow = r.testName
+              let secondRow = r.name
               secondRow += rightPad(secondRow, 26)
               secondRow += summary[0] || ''
               secondRow += rightPad(secondRow, innerWidth)
@@ -88,9 +88,18 @@ const testResults = (results) => {
               rows.push(`│ ${fourthRow} │`)
               return rows.join('\n')+'\n'
             })
+  let dataUsageCell = `${dataUsage}`
+  dataUsageCell += rightPad(dataUsageCell, 12)
+
+  let networksCell = `${networkCount} nets`
+  networksCell += rightPad(networksCell, 12)
+
+  let msmtsCell = `${msmtsCount} msmts`
+  msmtsCell += rightPad(msmtsCell, 12)
+
   o += contentRows.join('┢' + '━'.repeat(colWidth) + '┪\n')
   o += '└┬──────────────┬──────────────┬──────────────┬'+'─'.repeat(colWidth - 46)+'┘\n'
-  o += ` │  132 tests   │ 22 networks  │    128 MB    │
+  o += ` │ ${msmtsCell} │ ${networksCell} │ ${dataUsageCell} │
  ╰──────────────┴──────────────┴──────────────╯
 `
   return o

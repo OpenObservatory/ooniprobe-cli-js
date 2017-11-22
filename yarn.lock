@@ -2098,9 +2098,9 @@ md5.js@^1.3.4:
     hash-base "^3.0.0"
     inherits "^2.0.1"
 
-measurement-kit@^0.1.0-alpha.1:
-  version "0.1.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/measurement-kit/-/measurement-kit-0.1.0-alpha.1.tgz#97b3ceb907ccfaa32c14ce70169b3d69a110428a"
+measurement-kit@^0.1.0-alpha.4:
+  version "0.1.0-alpha.4"
+  resolved "https://registry.yarnpkg.com/measurement-kit/-/measurement-kit-0.1.0-alpha.4.tgz#be2f952bc856d84be1067cc85c6cb055f567394d"
   dependencies:
     any-promise "^1.3.0"
     bindings "^1.3.0"

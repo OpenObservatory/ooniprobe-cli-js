@@ -1,0 +1,8 @@
+{
+  "name": "ooni-skeleton",
+  "version": "0.3.0",
+  "description": "Skeleton for writing OONI Probe tests",
+  "dependencies": {
+    "measurement-kit": "0.1.0"
+  }
+}

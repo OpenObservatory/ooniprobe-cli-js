@@ -1,12 +1,16 @@
+import path from 'path'
+
 import camelCase from 'camelcase'
+import moment from 'moment'
 
 import percentage from '../cli/output/percentage'
 import wait from '../cli/output/wait'
 
 import {
-  Result,
   Measurement
 } from '../config/db'
+
+import iso8601 from '../util/iso8601'
 
 import HTTPHeaderFieldManipulation from './http-header-field-manipulation'
 import HTTPInvalidRequestLine from './http-invalid-request-line'
@@ -14,30 +18,42 @@ import WebConnectivity from './web-connectivity'
 import NDT from './ndt'
 import Base from './base'
 
+import { getOoniDir } from './global-path'
+
+const OONI_DIR = getOoniDir()
+
+const makeReportFile = (name) => {
+  return path.join(
+    OONI_DIR,
+    'measurements',
+    'raw',
+    `${moment.utc().format(iso8601)}Z-${name}-${randInt(10, 90)}.jsonl`
+  )
+}
+
 export const makeOoni = () => {
   let dbOperations = [],
+      measurements = [],
       progress = null,
       reportId = null,
+      reportFile = null,
+      measurementName = null,
       uploaded = false,
       localReportId = null,
       isMk = false
-
-  let measurement = Measurement.build({
-    state: 'active'
-  })
 
   const init = (nt) => {
     // XXX we use duck typing to see if the argument is a measurement Kit
     // nettest. Maybe we should change this.
     if (nt.test && nt.name && nt.setOptions) isMk = true
+    if (measurementName !== null) throw new Error('Init can only be called once')
 
-    measurement.name = camelCase(nt.name)
-    measurement.reportFile = measurement.makeReportFile()
-    dbOperations.push(measurement.save())
+    measurementNname = camelCase(nt.name)
+    reportFile = makeReportFile(measurementName)
 
     if (isMk) {
       nt.test.set_options('no_file_report', '0')
-      nt.test.set_output_filepath(measurement.reportFile)
+      nt.test.set_output_filepath(reportFile)
       nt.on('log', (severity, message) => {
         // XXX this a workaround due to a bug in MK
         // I actually also need to know if the report has been created
@@ -58,16 +74,20 @@ export const makeOoni = () => {
           uploaded = false
           reportId = `LOCAL-${entry.id}`
         }
-        if (!measurement.country) {
-          dbOperations.push(measurement.update({
-            reportId: reportId,
-            country: entry['probe_cc'],
-            asn: entry['probe_asn'],
-            ip: entry['ip'],
-            // We append the Z to make moment understand it's UTC
-            date: moment(entry['measurement_start_time'] + 'Z').toDate(),
-          }))
-        }
+        let measurement = Measurement.build({
+          state: 'active',
+          reportId: reportId,
+          country: entry['probe_cc'],
+          asn: entry['probe_asn'],
+          ip: entry['ip'],
+          measurementId: entry['id'],
+          name: measurementName,
+          reportFile: reportFile,
+          // We append the Z to make moment understand it's UTC
+          date: moment(entry['measurement_start_time'] + 'Z').toDate(),
+        })
+        dbOperations.push(measurement.save())
+        measurements.push(measurement)
       })
     }
   }
@@ -77,20 +97,30 @@ export const makeOoni = () => {
     progress = wait(`${percentage(percent)}: ${message}`, persist)
   }
 
-  const setSummary = (summary) => {
-    dbOperations.push(measurement.update({
+  const setSummary = (measurementId, summary) => {
+    const msmts = measurements
+                    .filter(m => m.measurementId == measurementId)
+    if (msmts.length !== 1) {
+      throw Error("Could not find measurement with id " + measurementId)
+    }
+    dbOperations.push(msmts[0].update({
       summary
     }))
   }
 
   const run = async (runner) => {
     await runner()
-    dbOperations.push(measurement.update({
-      // XXX Here I make the assumption that either it all failed or not.
-      // This is wrong.
-      state: uploaded ? 'uploaded' : 'done'
-    }))
+
+    // XXX Here I make the assumption that either it all failed or not.
+    // This is a lie.
+    for (const measurement of measurements) {
+      dbOperations.push(measurement.update({
+        state: uploaded ? 'uploaded' : 'done'
+      }))
+    }
+
     await Promise.all(dbOperations)
+    return measurements
   }
 
   return {
@@ -101,11 +131,19 @@ export const makeOoni = () => {
   }
 }
 
+const makeNettestLoader = (nettestPath) => {
+  return () => {
+    return {
+      nettest: require(nettestPath)
+    }
+  }
+}
+
 const nettests = {
   webConnectivity: WebConnectivity,
   httpInvalidRequestLine: HTTPInvalidRequestLine,
   httpHeaderFieldManipulation: HTTPHeaderFieldManipulation,
-  ndt: NDT,
+  ndt: makeNettestLoader('./ndt'),
 
   // Missing wrapper
   dash: Base,
@@ -137,7 +175,10 @@ export const nettestTypes = {
     ],
     name: 'Performance & Speed',
     shortDescription: 'Tests pertaining to speed & performance of your network.',
-    help: 'No help for you'
+    help: 'No help for you',
+    makeSummary: (measurements) => {
+      return {}
+    }
   },
   webCensorship: {
     nettests: [
@@ -145,7 +186,10 @@ export const nettestTypes = {
     ],
     name: 'Web Censorship',
     shortDescription: 'Check if websites are blocked.',
-    help: 'No help for you'
+    help: 'No help for you',
+    makeSummary: (measurements) => {
+      return {}
+    }
   },
   middleboxes: {
     nettests: [
@@ -154,7 +198,10 @@ export const nettestTypes = {
     ],
     name: 'Middleboxes',
     shortDescription: 'Detect the presence of "Middle boxes"',
-    help: 'No help for you'
+    help: 'No help for you',
+    makeSummary: (measurements) => {
+      return {}
+    }
   },
   imBlocking: {
     nettests: [
@@ -164,7 +211,10 @@ export const nettestTypes = {
     ],
     name: 'IM Blocking',
     shortDescription: 'Check if Instant Messagging apps are blocked.',
-    help: 'No help for you'
+    help: 'No help for you',
+    makeSummary: (measurements) => {
+      return {}
+    }
   },
   circumvention: {
     nettests: [
@@ -176,7 +226,10 @@ export const nettestTypes = {
     ],
     name: 'Censorship Circumvention',
     shortDescription: 'Check which censorship circumvention tools work.',
-    help: 'No help for you'
+    help: 'No help for you',
+    makeSummary: (measurements) => {
+      return {}
+    }
   }
 }
 

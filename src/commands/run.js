@@ -1,5 +1,6 @@
 import mri from 'mri'
 import range from 'lodash.range'
+import moment from 'moment'
 
 import chalk from 'chalk'
 import info from '../cli/output/info'
@@ -11,7 +12,11 @@ import optionPad from '../cli/output/option-pad'
 import exit from '../util/exit'
 
 import camelCase from 'camelcase'
-import { nettestTypes } from '../nettests'
+import { nettestTypes, makeOoni } from '../nettests'
+
+import {
+  Result
+} from '../config/db'
 
 const debug = require('debug')('commands.run')
 
@@ -46,18 +51,46 @@ const help = () => {
 `)
 }
 
-const run = async ({nettestType, argv}) => {
+const makeCli () => {
+  return {
+    log: console.log
+  }
+}
+
+const run = async ({camelName, argv}) => {
+  const nettestType = nettestTypes[camelName]
+
   const sOrNot = nettestType.nettests.length > 1 ? 's' : '';
+  let dbOperations = []
+  let result = Result.build({
+    name: camelName,
+    startTime: moment.utc(),
+    done: false
+  })
+  dbOperations.push(result.save())
 
   console.log(info('Running '+
               chalk.bold(`${nettestType.nettests.length} ${nettestType.name} `) +
               `test${sOrNot}`))
 
-  for (const Nettest of nettestType.nettests) {
-    const nettest = new Nettest
+  for (const nettestLoader of nettestType.nettests) {
+    const { nettest } = nettestLoader()
     console.log(info(`${chalk.bold(nettest.name)}`))
-    await nettest.run(argv)
+    const measurements = await nettest.run({ooni: makeOoni(), argv})
+    nettest.renderRunSummary(measurements, {
+      Cli: makeCli(),
+      chalk: chalk,
+      Components: null,
+      React: null,
+    })
+    dbOperations.push(result.setMeasurements(measurements))
   }
+  dbOperations.push(result.update({
+    summary: nettestType.makeSummary(result.measurements),
+    endTime: moment.utc(),
+    done: true
+  }))
+  await Promise.all(dbOperations)
 }
 
 // Define these as module level variables so we don't have to pass them along
@@ -102,12 +135,11 @@ const main = async ctx => {
       await exit(1)
       return
     }
-    const nettestType = nettestTypes[camelName]
     if (argv.help) {
-      console.log(nettestType.help)
+      console.log(nettestTypes[camelName].help)
       await exit(0)
     } else {
-      await run({nettestType, argv})
+      await run({camelName, argv})
     }
   } catch(err) {
     if (err.usageError) {

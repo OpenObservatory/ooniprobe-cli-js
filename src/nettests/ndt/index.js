@@ -1,4 +1,6 @@
-exports.formatRunSummary = (summary, {React, Cli, Components, chalk}) => {
+exports.renderRunSummary = (measurements, {React, Cli, Components, chalk}) => {
+  const summary = measurements[0].summary
+
   const uploadMbit = Util.toMbit(summary.upload)
   const downloadMbit = Util.toMbit(summary.download)
   const ping = Math.round(summary.ping*10)/10
@@ -47,13 +49,14 @@ const makeSummary = (test_keys) => {
   timeouts: test_keys.advanced['timeouts']
 }
 
-exports.run = (ooni) => {
+exports.run = ({ooni, argv}) => {
   const ndt = Ndt()
   ooni.init(ndt)
 
   ndt.on('begin', () => ooni.onProgress(0.0, 'starting ndt'))
   ndt.on('progress', (percent, message) => {
-    persist = !(message.startsWith('upload-speed') || message.startsWith('download-speed'))
+    persist = !(message.startsWith('upload-speed') ||
+                message.startsWith('download-speed'))
     ooni.onProgress(percent, message, persist)
   })
 

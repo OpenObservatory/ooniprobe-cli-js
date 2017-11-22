@@ -54,17 +54,9 @@ export const Measurement = sequelize.define('measurement', {
 
   reportFile: Sequelize.STRING,
   reportId: Sequelize.STRING,
-  input: Sequelize.STRING
+  input: Sequelize.STRING,
+  measurementId: Sequelize.STRING
 })
-
-Measurement.prototype.makeReportFile = () => {
-  return path.join(
-    OONI_DIR,
-    'measurements',
-    'raw',
-    `${moment.utc().format(iso8601)}Z-${this.name}-${randInt(10, 90)}.jsonl`
-  )
-}
 
 export const Result = sequelize.define('result', {
   id: {
@@ -73,7 +65,8 @@ export const Result = sequelize.define('result', {
     autoIncrement: true
   },
   name: Sequelize.STRING,
-  date: Sequelize.DATE,
+  startTime: Sequelize.DATE,
+  endTime: Sequelize.DATE,
   summary: Sequelize.JSON,
   done: Sequelize.BOOLEAN
 })

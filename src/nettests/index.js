@@ -126,6 +126,7 @@ export const makeOoni = () => {
     }
 
     await Promise.all(dbOperations)
+    progress && progress()
     return measurements
   }
 
@@ -140,7 +141,11 @@ export const makeOoni = () => {
 const makeNettestLoader = (nettestName) => {
   return () => {
     return {
-      nettest: require('./' + nettestName)
+      nettest: require('./' + nettestName),
+      // XXX maybe populate this from the package.json
+      meta: {
+        name: nettestName
+      }
     }
   }
 }

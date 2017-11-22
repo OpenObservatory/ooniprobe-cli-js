@@ -18,6 +18,8 @@ import {
   Result
 } from '../config/db'
 
+import makeCli from '../cli/makeCli'
+
 const debug = require('debug')('commands.run')
 
 const help = () => {
@@ -51,12 +53,6 @@ const help = () => {
 `)
 }
 
-const makeCli = () => {
-  return {
-    log: console.log
-  }
-}
-
 const run = async ({camelName, argv}) => {
   const nettestType = nettestTypes[camelName]
   debug('nettestType', nettestType, camelName)
@@ -75,8 +71,8 @@ const run = async ({camelName, argv}) => {
               `test${sOrNot}`))
 
   for (const nettestLoader of nettestType.nettests) {
-    const { nettest } = nettestLoader()
-    console.log(info(`${chalk.bold(nettest.name)}`))
+    const { nettest, meta } = nettestLoader()
+    console.log(info(`${chalk.bold(meta.name)}`))
     const measurements = await nettest.run({ooni: makeOoni(), argv})
     nettest.renderSummary(measurements, {
       Cli: makeCli(),

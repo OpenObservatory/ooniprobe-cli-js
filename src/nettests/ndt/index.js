@@ -3,8 +3,8 @@ import { Ndt } from 'measurement-kit'
 export const renderSummary = (measurements, {React, Cli, Components, chalk}) => {
   const summary = measurements[0].summary
 
-  const uploadMbit = Util.toMbit(summary.upload)
-  const downloadMbit = Util.toMbit(summary.download)
+  const uploadMbit = Cli.output.toMbit(summary.upload)
+  const downloadMbit = Cli.output.toMbit(summary.download)
   const ping = Math.round(summary.ping*10)/10
   const packetLoss = Math.round(summary.packetLoss * 100 * 100)/100
   const outOfOrder = Math.round(summary.outOfOrder * 100 * 100)/100

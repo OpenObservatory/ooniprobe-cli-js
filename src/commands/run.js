@@ -51,7 +51,7 @@ const help = () => {
 `)
 }
 
-const makeCli () => {
+const makeCli = () => {
   return {
     log: console.log
   }
@@ -59,6 +59,7 @@ const makeCli () => {
 
 const run = async ({camelName, argv}) => {
   const nettestType = nettestTypes[camelName]
+  debug('nettestType', nettestType, camelName)
 
   const sOrNot = nettestType.nettests.length > 1 ? 's' : '';
   let dbOperations = []
@@ -77,7 +78,7 @@ const run = async ({camelName, argv}) => {
     const { nettest } = nettestLoader()
     console.log(info(`${chalk.bold(nettest.name)}`))
     const measurements = await nettest.run({ooni: makeOoni(), argv})
-    nettest.renderRunSummary(measurements, {
+    nettest.renderSummary(measurements, {
       Cli: makeCli(),
       chalk: chalk,
       Components: null,

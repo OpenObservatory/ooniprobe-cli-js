@@ -1,4 +1,6 @@
-exports.renderRunSummary = (measurements, {React, Cli, Components, chalk}) => {
+import { Ndt } from 'measurement-kit'
+
+export const renderSummary = (measurements, {React, Cli, Components, chalk}) => {
   const summary = measurements[0].summary
 
   const uploadMbit = Util.toMbit(summary.upload)
@@ -21,6 +23,8 @@ exports.renderRunSummary = (measurements, {React, Cli, Components, chalk}) => {
     Cli.log(`         ${chalk.bold('MSS')}: ${chalk.cyan(mss)}`)
     Cli.log(`    ${chalk.bold('Timeouts')}: ${chalk.cyan(timeouts)}`)
   } else if (React) {
+    /*
+    XXX this is broken currently as it depends on react
     const {
       Container,
       Heading
@@ -33,10 +37,14 @@ exports.renderRunSummary = (measurements, {React, Cli, Components, chalk}) => {
         </Container>
       }
     }
+    */
   }
 }
 
-const makeSummary = (test_keys) => {
+export const renderHelp = () => {
+}
+
+export const makeSummary = (test_keys) => ({
   upload: test_keys.simple['upload'],
   download: test_keys.simple['download'],
   ping: test_keys.simple['ping'],
@@ -47,31 +55,20 @@ const makeSummary = (test_keys) => {
   outOfOrder: test_keys.advanced['out_of_order'],
   packetLoss: test_keys.advanced['packet_loss'],
   timeouts: test_keys.advanced['timeouts']
-}
+})
 
-exports.run = ({ooni, argv}) => {
+export const run = ({ooni, argv}) => {
   const ndt = Ndt()
   ooni.init(ndt)
 
   ndt.on('begin', () => ooni.onProgress(0.0, 'starting ndt'))
   ndt.on('progress', (percent, message) => {
-    persist = !(message.startsWith('upload-speed') ||
-                message.startsWith('download-speed'))
+    const persist = !(message.startsWith('upload-speed') ||
+                      message.startsWith('download-speed'))
     ooni.onProgress(percent, message, persist)
-  })
-
-  ndt.on('log', (severity, message) => {
-    debug(`<${severity}> ${message}`)
   })
   ndt.on('entry', entry => {
     ooni.setSummary(entry.id, makeSummary(entry.test_keys))
   })
-  ndt.on('event', evt => {
-    debug('event:', evt)
-  })
-  ndt.on('end', () => {
-    debug('ending test')
-  })
-
   return ooni.run(ndt.run)
 }

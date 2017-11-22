@@ -1,16 +1,14 @@
 import chalk from 'chalk'
 
-import exit from '../util/exit'
-import wait from '../cli/output/wait'
-import ok from '../cli/output/ok'
-import notok from '../cli/output/notok'
-import error from '../cli/output/error'
+import exit from '../../util/exit'
+import wait from '../../cli/output/wait'
+import ok from '../../cli/output/ok'
+import notok from '../../cli/output/notok'
+import error from '../../cli/output/error'
 
-import nettestHelp from '../cli/output/nettest-help'
-import rightPad from '../cli/output/right-pad'
-import sleep from '../util/sleep'
-
-import NettestBase from './base'
+import nettestHelp from '../../cli/output/nettest-help'
+import rightPad from '../../cli/output/right-pad'
+import sleep from '../../util/sleep'
 
 exports.renderRunSummary = (measurements, {React, Cli, Components, chalk}) => {
 }
@@ -35,7 +33,7 @@ exports.renderHelp = () => {
   ])
 }
 
-exports.run = ({ooni, argv}) => {
+exports.run = async ({ooni, argv}) => {
   let currentUrl
   if (argv.file) {
     // Handle testing input file
@@ -57,6 +55,4 @@ exports.run = ({ooni, argv}) => {
 
   console.log(ok(`${currentUrl} is OK`))
   console.log(notok(`${currentUrl} is NOT OK`))
-
-  return exit(0)
 }

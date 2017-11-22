@@ -6,16 +6,13 @@ import Sequelize from 'sequelize'
 
 import { getOoniDir } from './global-path'
 import iso8601 from '../util/iso8601'
+import randInt from '../util/randInt'
 
 const debug = require('debug')('config.db')
 
 const OONI_DIR = getOoniDir()
 
 const DB_DIR = path.join(OONI_DIR, 'db')
-
-const randInt = (min, max) => {
-  return Math.floor(Math.random() * max - min) + min
-}
 
 export const sequelize = new Sequelize({
   dialect: 'sqlite',

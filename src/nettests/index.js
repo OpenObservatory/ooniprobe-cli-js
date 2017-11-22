@@ -20,36 +20,33 @@ const makeReportFile = (name) => {
   return path.join(
     OONI_DIR,
     'measurements',
-    'raw',
     `${moment.utc().format(iso8601)}Z-${name}-${randInt(10, 90)}.jsonl`
   )
 }
 
-export const makeOoni = () => {
+export const makeOoni = (loader) => {
   let dbOperations = [],
       measurements = [],
+      mkOptions = {},
       progress = null,
       reportId = null,
       reportFile = null,
-      measurementName = null,
+      measurementName = camelCase(loader.meta.name),
       uploaded = false,
       localReportId = null,
       isMk = false
 
+  reportFile = makeReportFile(measurementName)
+  mkOptions = {
+    outputPath: reportFile
+  }
   const init = (nt) => {
     // XXX we use duck typing to see if the argument is a measurement Kit
     // nettest. Maybe we should change this.
     debug('Initialising', nt.constructor.name)
-    if (measurementName !== null) throw new Error('Init can only be called once')
 
     if (nt.test && nt.name && nt.setOptions) isMk = true
-    if (isMk) {
-      measurementName = camelCase(nt.name)
-    } else {
-      measurementName = camelCase(nt.constructor.name)
-    }
 
-    reportFile = makeReportFile(measurementName)
     if (isMk) {
       nt.test.set_options('no_file_report', '0')
       nt.test.set_output_filepath(reportFile)
@@ -91,6 +88,7 @@ export const makeOoni = () => {
           reportFile: reportFile,
           // We append the Z to make moment understand it's UTC
           startTime: moment(entry['measurement_start_time'] + 'Z').toDate(),
+          summary: loader.nettest.makeSummary(entry)
         })
         dbOperations.push(measurement.save())
         measurements.push(measurement)
@@ -104,14 +102,6 @@ export const makeOoni = () => {
   }
 
   const setSummary = (measurementId, summary) => {
-    const msmts = measurements
-                    .filter(m => m.measurementId == measurementId)
-    if (msmts.length !== 1) {
-      throw Error("Could not find measurement with id " + measurementId)
-    }
-    dbOperations.push(msmts[0].update({
-      summary
-    }))
   }
 
   const run = async (runner) => {
@@ -136,6 +126,7 @@ export const makeOoni = () => {
     init,
     onProgress,
     setSummary,
+    mkOptions,
     run
   }
 }

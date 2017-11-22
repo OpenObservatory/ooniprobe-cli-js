@@ -15,13 +15,13 @@ export const renderSummary = (measurements, {React, Cli, Components, chalk}) => 
   // When this function is called from the Cli the Cli will be set, when it's
   // called from the Desktop app we have React set instead.
   if (Cli) {
-    Cli.log(`    ${chalk.bold('Download')}: ${chalk.cyan(uploadMbit)} ${chalk.dim('Mbit/s')}`)
-    Cli.log(`      ${chalk.bold('Upload')}: ${chalk.cyan(downloadMbit)} ${chalk.dim('Mbit/s')}`)
-    Cli.log(`        ${chalk.bold('Ping')}: ${chalk.cyan(ping)} ${chalk.dim('ms')} ${chalk.dim('(min/avg/max)')}`)
-    Cli.log(` ${chalk.bold('Packet loss')}: ${chalk.cyan(packetLoss)}`)
-    Cli.log(`${chalk.bold('Out of order')}: ${chalk.cyan(outOfOrder)}`)
-    Cli.log(`         ${chalk.bold('MSS')}: ${chalk.cyan(mss)}`)
-    Cli.log(`    ${chalk.bold('Timeouts')}: ${chalk.cyan(timeouts)}`)
+    Cli.log(Cli.output.labelValue('Up', uploadMbit, {unit: 'Mbit'}))
+    Cli.log(Cli.output.labelValue('Down', uploadMbit, {unit: 'Mbit'}))
+    Cli.log(Cli.output.labelValue('Ping', ping, {unit: 'ms'}))
+    Cli.log(Cli.output.labelValue('Packet loss', packetLoss))
+    Cli.log(Cli.output.labelValue('Out of order', outOfOrder))
+    Cli.log(Cli.output.labelValue('MSS', mss))
+    Cli.log(Cli.output.labelValue('Timeouts', timeouts))
   } else if (React) {
     /*
     XXX this is broken currently as it depends on react
@@ -41,13 +41,10 @@ export const renderSummary = (measurements, {React, Cli, Components, chalk}) => 
   }
 }
 
-export const renderMeasurementSummary = (measurement, {Cli, chalk}) => {
-}
-
 export const renderHelp = () => {
 }
 
-export const makeSummary = (test_keys) => ({
+export const makeSummary = ({test_keys}) => ({
   upload: test_keys.simple['upload'],
   download: test_keys.simple['download'],
   ping: test_keys.simple['ping'],
@@ -61,7 +58,7 @@ export const makeSummary = (test_keys) => ({
 })
 
 export const run = ({ooni, argv}) => {
-  const ndt = Ndt()
+  const ndt = Ndt(ooni.mkOptions)
   ooni.init(ndt)
 
   ndt.on('begin', () => ooni.onProgress(0.0, 'starting ndt'))
@@ -69,9 +66,6 @@ export const run = ({ooni, argv}) => {
     const persist = !(message.startsWith('upload-speed') ||
                       message.startsWith('download-speed'))
     ooni.onProgress(percent, message, persist)
-  })
-  ndt.on('entry', entry => {
-    ooni.setSummary(entry.id, makeSummary(entry.test_keys))
   })
   return ooni.run(ndt.run)
 }

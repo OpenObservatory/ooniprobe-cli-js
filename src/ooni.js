@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import path from 'path'
+
 import * as fs from 'fs-extra'
 import mri from 'mri'
 
@@ -139,6 +141,7 @@ const main = async (argv_) => {
     ctx.argv.push('-h')
   }
 
+  await fs.ensureDir(path.join(OONI_DIR, 'measurements'))
   switch(subcommand) {
     case 'run': {
       return commands.run(ctx)

@@ -66,6 +66,7 @@ const testResults = async (results, getMeta) => {
     let innerWidth = colWidth - 2
     let rows = []
     const meta = await getMeta(r)
+
     /*
      * This should return:
      * {

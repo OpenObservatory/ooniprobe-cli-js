@@ -76,19 +76,29 @@ const listAction = async ctx => {
   }
 
   const listMeasurements = async () => {
-    const result = await Measurement.findAndCountAll({group: 'reportId'})
-    const msmtsCount = 42
-    const networksCount = 3
-    const dataUsageCount = '10 MB'
-    console.log(testResults(
-      result.rows,
-      ({upload, download}) => {
-        return [
-          labelValue('Up', toMbit(upload), {unit: 'Mbit'}),
-          labelValue('Down', toMbit(download), {unit: 'Mbit'}),
-        ]
+    const results = await Measurement.findAndCountAll({group: 'reportId'})
+
+    const out = await testResults(results.rows, async (measurement) => {
+      const { nettest } = nettests[measurement.name]()
+
+      let summary = []
+      const Cli = makeCli(m => {
+        if (summary.length >= 3) return
+        summary.push(m)
       })
-    )
+      // XXX we should figure out how this will work when we have many measurements
+      nettest.renderSummary([measurement], {Cli, chalk})
+      return {
+        name: measurement.name,
+        network: measurement.asn,
+        asn: measurement.asn,
+        country: measurement.country,
+        dataUsage: measurement.dataUsage,
+        date: measurement.startTime,
+        summary: summary
+      }
+    })
+    console.log(out)
   }
 
   const listResults = async () => {

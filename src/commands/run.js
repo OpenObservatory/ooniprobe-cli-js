@@ -71,9 +71,10 @@ const run = async ({camelName, argv}) => {
               `test${sOrNot}`))
 
   for (const nettestLoader of nettestType.nettests) {
-    const { nettest, meta } = nettestLoader()
+    const loader = nettestLoader()
+    const { nettest, meta } = loader
     console.log(info(`${chalk.bold(meta.name)}`))
-    const measurements = await nettest.run({ooni: makeOoni(), argv})
+    const measurements = await nettest.run({ooni: makeOoni(loader), argv})
     nettest.renderSummary(measurements, {
       Cli: makeCli(),
       chalk: chalk,

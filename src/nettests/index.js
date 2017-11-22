@@ -90,7 +90,7 @@ export const makeOoni = () => {
           name: measurementName,
           reportFile: reportFile,
           // We append the Z to make moment understand it's UTC
-          date: moment(entry['measurement_start_time'] + 'Z').toDate(),
+          startTime: moment(entry['measurement_start_time'] + 'Z').toDate(),
         })
         dbOperations.push(measurement.save())
         measurements.push(measurement)
@@ -121,7 +121,9 @@ export const makeOoni = () => {
     // This is a lie.
     for (const measurement of measurements) {
       dbOperations.push(measurement.update({
-        state: uploaded ? 'uploaded' : 'done'
+        state: uploaded ? 'uploaded' : 'done',
+        endTime: moment().utc().toDate(),
+        dataUsage: 1024**2*randInt(1, 20) // XXX we currently fill this with some random data
       }))
     }
 
@@ -150,7 +152,7 @@ const makeNettestLoader = (nettestName) => {
   }
 }
 
-const nettests = {
+export const nettests = {
   webConnectivity: makeNettestLoader('web-connectivity'),
   httpInvalidRequestLine: makeNettestLoader('http-invalid-request-line'),
   httpHeaderFieldManipulation: makeNettestLoader('http-header-field-manipulation'),
@@ -184,13 +186,27 @@ export const nettestTypes = {
   performance: {
     nettests: [
       nettests.ndt,
-      nettests.dash
+      //nettests.dash
     ],
     name: 'Performance & Speed',
     shortDescription: 'Tests pertaining to speed & performance of your network.',
     help: 'No help for you',
     makeSummary: (measurements) => {
-      return {}
+      return {
+        upload: measurements[0].summary.upload,
+        download: measurements[0].summary.download,
+        ping: measurements[0].summary.ping
+      }
+    },
+    renderSummary: (result, {Cli, chalk}) => {
+      const summary = result.summary
+      const uploadMbit = Cli.output.toMbit(summary.upload)
+      const downloadMbit = Cli.output.toMbit(summary.download)
+      const ping = Math.round(summary.ping*10)/10
+
+      Cli.log(Cli.output.labelValue('Up', uploadMbit, {unit: 'Mbit'}))
+      Cli.log(Cli.output.labelValue('Down', uploadMbit, {unit: 'Mbit'}))
+      Cli.log(Cli.output.labelValue('Ping', ping, {unit: 'ms'}))
     }
   },
   webCensorship: {
@@ -202,7 +218,8 @@ export const nettestTypes = {
     help: 'No help for you',
     makeSummary: (measurements) => {
       return {}
-    }
+    },
+    renderSummary: (measurement, {Cli, chalk}) => {}
   },
   middleboxes: {
     nettests: [
@@ -214,7 +231,8 @@ export const nettestTypes = {
     help: 'No help for you',
     makeSummary: (measurements) => {
       return {}
-    }
+    },
+    renderSummary: (measurement, {Cli, chalk}) => {}
   },
   imBlocking: {
     nettests: [
@@ -227,7 +245,8 @@ export const nettestTypes = {
     help: 'No help for you',
     makeSummary: (measurements) => {
       return {}
-    }
+    },
+    renderSummary: (measurement, {Cli, chalk}) => {}
   },
   circumvention: {
     nettests: [
@@ -242,7 +261,8 @@ export const nettestTypes = {
     help: 'No help for you',
     makeSummary: (measurements) => {
       return {}
-    }
+    },
+    renderSummary: (measurement, {Cli, chalk}) => {}
   }
 }
 

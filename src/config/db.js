@@ -29,7 +29,8 @@ export const Measurement = sequelize.define('measurement', {
     autoIncrement: true
   },
   name: Sequelize.STRING,
-  date: Sequelize.DATE,
+  startTime: Sequelize.DATE,
+  endTime: Sequelize.DATE,
   dataUsage: Sequelize.INTEGER,
   // This is an opaque JSON that is test dependent
   summary: Sequelize.JSON,
@@ -68,6 +69,7 @@ export const Result = sequelize.define('result', {
   done: Sequelize.BOOLEAN
 })
 Result.hasMany(Measurement, { as: 'Measurements' })
+sequelize.sync()
 
 export const initDb = async () => {
   await fs.ensureDir(DB_DIR)

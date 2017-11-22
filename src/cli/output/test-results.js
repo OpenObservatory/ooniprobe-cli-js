@@ -1,5 +1,6 @@
 import chalk from 'chalk'
 import moment from 'moment'
+import humanize from 'humanize'
 
 import rightPad from './right-pad'
 import labelValue from './label-value'
@@ -53,48 +54,68 @@ import labelValue from './label-value'
  ╰──────────────┴──────────────┴──────────────╯
 */
 
-const testResults = (results, msmtsCount, networkCount, dataUsage, summaryFormat) => {
+const testResults = async (results, getMeta) => {
   const colWidth = 50
   let o = '┏' + '━'.repeat(colWidth) + '┓\n'
-  let contentRows = results
-            .map(r => {
-              let innerWidth = colWidth - 2
-              let rows = []
-              const summary = summaryFormat(r.summary)
-              //.map(s => {
-              //  return labelValue(s.label, s.value, {unit: s.unit})
-              //})
-              let firstRow = `${chalk.bold(`#${r.id}`)} - ${moment(r.date).fromNow()}`
-              firstRow += rightPad(firstRow, innerWidth)
-              let secondRow = r.name
-              secondRow += rightPad(secondRow, 26)
-              secondRow += summary[0] || ''
-              secondRow += rightPad(secondRow, innerWidth)
+  let totalDataUsage = 0
+  let totalRows = 0
+  let allAsns = []
+  let allCountries = []
 
-              let thirdRow = 'Vodafone Italia'
-              thirdRow += rightPad(thirdRow, 26)
-              thirdRow += summary[1] || ''
-              thirdRow += rightPad(thirdRow, innerWidth)
+  const getContentRow = async (r) => {
+    let innerWidth = colWidth - 2
+    let rows = []
+    const meta = await getMeta(r)
+    /*
+     * This should return:
+     * {
+     *  name, network, date, country, summary, dataUsage
+     * }
+     */
+    if (allCountries.indexOf(meta.country) === -1) {
+      allCountries.push(meta.country)
+    }
+    if (allAsns.indexOf(meta.asn) === -1) {
+      allAsns.push(meta.asn)
+    }
+    totalDataUsage += meta.dataUsage
+    totalRows += 1
 
-              let fourthRow = `${chalk.cyan(r.asn)} (${chalk.cyan(r.country)})`
-              fourthRow += rightPad(fourthRow, 26)
-              fourthRow += summary[2] || ''
-              fourthRow += rightPad(fourthRow, innerWidth)
+    let firstRow = `${chalk.bold(`#${r.id}`)} - ${moment(meta.date).fromNow()}`
+    firstRow += rightPad(firstRow, innerWidth)
+    let secondRow = meta.name
+    secondRow += rightPad(secondRow, 26)
+    secondRow += meta.summary[0] || ''
+    secondRow += rightPad(secondRow, innerWidth)
 
-              rows.push(`┃ ${firstRow} ┃`)
-              rows.push('┡' + '━'.repeat(colWidth) + '┩')
-              rows.push(`│ ${secondRow} │`)
-              rows.push(`│ ${thirdRow} │`)
-              rows.push(`│ ${fourthRow} │`)
-              return rows.join('\n')+'\n'
-            })
-  let dataUsageCell = `${dataUsage}`
+    let thirdRow = meta.network
+    thirdRow += rightPad(thirdRow, 26)
+    thirdRow += meta.summary[1] || ''
+    thirdRow += rightPad(thirdRow, innerWidth)
+
+    let fourthRow = `${chalk.cyan(meta.asn)} (${chalk.cyan(meta.country)})`
+    fourthRow += rightPad(fourthRow, 26)
+    fourthRow += meta.summary[2] || ''
+    fourthRow += rightPad(fourthRow, innerWidth)
+
+    rows.push(`┃ ${firstRow} ┃`)
+    rows.push('┡' + '━'.repeat(colWidth) + '┩')
+    rows.push(`│ ${secondRow} │`)
+    rows.push(`│ ${thirdRow} │`)
+    rows.push(`│ ${fourthRow} │`)
+    return rows.join('\n')+'\n'
+  }
+  const contentRows = await Promise.all(
+    results.map(getContentRow)
+  )
+
+  let dataUsageCell = `${humanize.filesize(totalDataUsage)}`
   dataUsageCell += rightPad(dataUsageCell, 12)
 
-  let networksCell = `${networkCount} nets`
+  let networksCell = `${allAsns.length} nets`
   networksCell += rightPad(networksCell, 12)
 
-  let msmtsCell = `${msmtsCount} msmts`
+  let msmtsCell = `${totalRows} entries`
   msmtsCell += rightPad(msmtsCell, 12)
 
   o += contentRows.join('┢' + '━'.repeat(colWidth) + '┪\n')

@@ -41,6 +41,9 @@ export const renderSummary = (measurements, {React, Cli, Components, chalk}) => 
   }
 }
 
+export const renderMeasurementSummary = (measurement, {Cli, chalk}) => {
+}
+
 export const renderHelp = () => {
 }
 

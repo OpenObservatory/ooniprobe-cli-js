@@ -18,7 +18,7 @@ import {
   Result
 } from '../config/db'
 
-import makeCli from '../cli/makeCli'
+import makeCli from '../cli/make-cli'
 
 const debug = require('debug')('commands.run')
 
@@ -61,7 +61,7 @@ const run = async ({camelName, argv}) => {
   let dbOperations = []
   let result = Result.build({
     name: camelName,
-    startTime: moment.utc(),
+    startTime: moment.utc().toDate(),
     done: false
   })
   dbOperations.push(result.save())
@@ -82,12 +82,14 @@ const run = async ({camelName, argv}) => {
     })
     dbOperations.push(result.setMeasurements(measurements))
   }
-  dbOperations.push(result.update({
-    summary: nettestType.makeSummary(result.measurements),
-    endTime: moment.utc(),
-    done: true
-  }))
   await Promise.all(dbOperations)
+
+  const measurements = await result.getMeasurements()
+  await result.update({
+    summary: nettestType.makeSummary(measurements),
+    endTime: moment.utc().toDate(),
+    done: true
+  })
 }
 
 // Define these as module level variables so we don't have to pass them along

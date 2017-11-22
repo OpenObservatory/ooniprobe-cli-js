@@ -29,7 +29,8 @@ const help = () => {
 
   const nettestOptions = Object.keys(nettests).map(name => ({
     option: chalk.bold(name),
-    description: nettests[name].shortDescription
+    // XXX need some smart way to get these and cache them
+    description: nettests[name].shortDescription || ''
   }))
 
   console.log(`

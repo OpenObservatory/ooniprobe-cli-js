@@ -1,9 +1,12 @@
 import * as fs from 'fs-extra'
 import path from 'path'
 
+import moment from 'moment'
 import Sequelize from 'sequelize'
 
 import { getOoniDir } from './global-path'
+import iso8601 from '../util/iso8601'
+import randInt from '../util/randInt'
 
 const debug = require('debug')('config.db')
 
@@ -26,7 +29,8 @@ export const Measurement = sequelize.define('measurement', {
     autoIncrement: true
   },
   name: Sequelize.STRING,
-  date: Sequelize.DATE,
+  startTime: Sequelize.DATE,
+  endTime: Sequelize.DATE,
   dataUsage: Sequelize.INTEGER,
   // This is an opaque JSON that is test dependent
   summary: Sequelize.JSON,
@@ -48,7 +52,8 @@ export const Measurement = sequelize.define('measurement', {
 
   reportFile: Sequelize.STRING,
   reportId: Sequelize.STRING,
-  input: Sequelize.STRING
+  input: Sequelize.STRING,
+  measurementId: Sequelize.STRING
 })
 
 export const Result = sequelize.define('result', {
@@ -58,11 +63,13 @@ export const Result = sequelize.define('result', {
     autoIncrement: true
   },
   name: Sequelize.STRING,
-  date: Sequelize.DATE,
+  startTime: Sequelize.DATE,
+  endTime: Sequelize.DATE,
   summary: Sequelize.JSON,
   done: Sequelize.BOOLEAN
 })
 Result.hasMany(Measurement, { as: 'Measurements' })
+sequelize.sync()
 
 export const initDb = async () => {
   await fs.ensureDir(DB_DIR)

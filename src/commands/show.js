@@ -23,7 +23,8 @@ import exit from '../util/exit'
 import nettests from '../nettests'
 
 import {
-  getReport
+  Result,
+  Measurement
 } from '../config/db'
 
 const debug = require('debug')('commands.list')
@@ -81,21 +82,30 @@ const main = async ctx => {
     help()
     await exit(1)
   }
+
+  const results = await Measurement.findAll({
+    attributes: ['reportFile'],
+    where: {
+      id: parseInt(subcommand)
+    }
+  })
+  if (results.length == 0) {
+    // XXX prettify this
+    console.log('no results found')
+    return
+  }
+  const measurement = results[0]
   let readReport = new Promise((resolve, reject) => {
-    getReport(subcommand)
-      .then(value => {
-        const obj = JSON.parse(value)
-        const stream = fs.createReadStream(obj.path).pipe(StreamSplitter("\n"))
-        stream.on('token', line => {
-          const msmt = JSON.parse(line)
-          if (argv['pager'] === false) {
-            console.log(prettyjson.render(msmt))
-          } else {
-            pager(prettyjson.render(msmt))
-              .then(() => resolve())
-          }
-        })
-      })
+    const stream = fs.createReadStream(measurement.reportFile).pipe(StreamSplitter("\n"))
+    stream.on('token', line => {
+      const msmt = JSON.parse(line)
+      if (argv['pager'] === false) {
+        console.log(prettyjson.render(msmt))
+      } else {
+        pager(prettyjson.render(msmt))
+          .then(() => resolve())
+      }
+    })
   })
   await readReport
   await exit(1)

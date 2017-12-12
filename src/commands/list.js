@@ -17,14 +17,15 @@ import labelValue from '../cli/output/label-value'
 import testResults from '../cli/output/test-results'
 import icons from '../cli/output/icons'
 import toMbit from '../cli/output/to-mbit'
+import makeCli from '../cli/make-cli'
 
 import exit from '../util/exit'
 
-import nettests from '../nettests'
+import { nettestTypes, nettests } from '../nettests'
 
 import {
   Measurement,
-  Report
+  Result
 } from '../config/db'
 
 const debug = require('debug')('commands.list')
@@ -75,19 +76,54 @@ const listAction = async ctx => {
   }
 
   const listMeasurements = async () => {
-    const result = await Measurement.findAndCountAll({group: 'reportId'})
-    const msmtsCount = 42
-    const networksCount = 3
-    const dataUsageCount = '10 MB'
-    console.log(testResults(result.rows, msmtsCount, networksCount, dataUsageCount, ({upload, download}) => {
-      return [
-        labelValue('Up', toMbit(upload), {unit: 'Mbit'}),
-        labelValue('Down', toMbit(download), {unit: 'Mbit'}),
-      ]
-    }))
+    const results = await Measurement.findAndCountAll({group: 'reportId'})
+
+    const out = await testResults(results.rows, async (measurement) => {
+      const { nettest } = nettests[measurement.name]()
+
+      let summary = []
+      const Cli = makeCli(m => {
+        if (summary.length >= 3) return
+        summary.push(m)
+      })
+      // XXX we should figure out how this will work when we have many measurements
+      nettest.renderSummary([measurement], {Cli, chalk})
+      return {
+        name: measurement.name,
+        network: measurement.asn,
+        asn: measurement.asn,
+        country: measurement.country,
+        dataUsage: measurement.dataUsage,
+        date: measurement.startTime,
+        summary: summary
+      }
+    })
+    console.log(out)
   }
 
-  const listReports = () => {
+  const listResults = async () => {
+    const result = await Result.findAndCountAll()
+
+    const out = await testResults(result.rows, async (result) => {
+      const measurements = await result.getMeasurements()
+      const { renderSummary } = nettestTypes[result.name]
+
+      let summary = []
+      const Cli = makeCli(m => {
+        summary.push(m)
+      })
+      renderSummary(result, {Cli, chalk})
+      return {
+        name: result.name,
+        network: measurements[0].asn,
+        asn: measurements[0].asn,
+        country: measurements[0].country,
+        dataUsage: measurements.map(m => m.dataUsage).reduce((a,b) => a += b),
+        date: result.startTime,
+        summary: summary
+      }
+    })
+    console.log(out)
   }
 
   if (subcommand === 'measurements' || subcommand === 'msmts') {

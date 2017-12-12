@@ -1,5 +1,6 @@
 import mri from 'mri'
 import range from 'lodash.range'
+import moment from 'moment'
 
 import chalk from 'chalk'
 import info from '../cli/output/info'
@@ -11,7 +12,13 @@ import optionPad from '../cli/output/option-pad'
 import exit from '../util/exit'
 
 import camelCase from 'camelcase'
-import { nettestTypes } from '../nettests'
+import { nettestTypes, makeOoni } from '../nettests'
+
+import {
+  Result
+} from '../config/db'
+
+import makeCli from '../cli/make-cli'
 
 const debug = require('debug')('commands.run')
 
@@ -46,18 +53,44 @@ const help = () => {
 `)
 }
 
-const run = async ({nettestType, argv}) => {
+const run = async ({camelName, argv}) => {
+  const nettestType = nettestTypes[camelName]
+  debug('nettestType', nettestType, camelName)
+
   const sOrNot = nettestType.nettests.length > 1 ? 's' : '';
+  let dbOperations = []
+  let result = Result.build({
+    name: camelName,
+    startTime: moment.utc().toDate(),
+    done: false
+  })
+  dbOperations.push(result.save())
 
   console.log(info('Running '+
               chalk.bold(`${nettestType.nettests.length} ${nettestType.name} `) +
               `test${sOrNot}`))
 
-  for (const Nettest of nettestType.nettests) {
-    const nettest = new Nettest
-    console.log(info(`${chalk.bold(nettest.name)}`))
-    await nettest.run(argv)
+  for (const nettestLoader of nettestType.nettests) {
+    const loader = nettestLoader()
+    const { nettest, meta } = loader
+    console.log(info(`${chalk.bold(meta.name)}`))
+    const measurements = await nettest.run({ooni: makeOoni(loader), argv})
+    nettest.renderSummary(measurements, {
+      Cli: makeCli(),
+      chalk: chalk,
+      Components: null,
+      React: null,
+    })
+    dbOperations.push(result.setMeasurements(measurements))
   }
+  await Promise.all(dbOperations)
+
+  const measurements = await result.getMeasurements()
+  await result.update({
+    summary: nettestType.makeSummary(measurements),
+    endTime: moment.utc().toDate(),
+    done: true
+  })
 }
 
 // Define these as module level variables so we don't have to pass them along
@@ -102,12 +135,11 @@ const main = async ctx => {
       await exit(1)
       return
     }
-    const nettestType = nettestTypes[camelName]
     if (argv.help) {
-      console.log(nettestType.help)
+      console.log(nettestTypes[camelName].help)
       await exit(0)
     } else {
-      await run({nettestType, argv})
+      await run({camelName, argv})
     }
   } catch(err) {
     if (err.usageError) {

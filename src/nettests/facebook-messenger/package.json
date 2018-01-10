@@ -1,0 +1,9 @@
+
+{
+  "name": "ooni-facebook-messenger",
+  "version": "0.3.0",
+  "description": "Official OONI test for running Facebook Messenger",
+  "dependencies": {
+    "measurement-kit": "0.1.0"
+  }
+}

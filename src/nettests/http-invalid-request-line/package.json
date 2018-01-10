@@ -1,0 +1,9 @@
+
+{
+  "name": "ooni-http-invalid-request-line",
+  "version": "0.3.0",
+  "description": "Official OONI test for running HTTP Invalid Request Line",
+  "dependencies": {
+    "measurement-kit": "0.1.0"
+  }
+}

@@ -1,5 +1,5 @@
 
-import { WebConnectivity } from 'measurement-kit'
+import { HttpHeaderFieldManipulation } from 'measurement-kit'
 
 export const renderSummary = (measurements, {React, Cli, Components, chalk}) => {
   const summary = measurements[0].summary
@@ -34,12 +34,12 @@ export const makeSummary = ({test_keys}) => ({
 })
 
 export const run = ({ooni, argv}) => {
-  const webConnectivity = WebConnectivity(ooni.mkOptions)
-  ooni.init(webConnectivity)
+  const httpHeaderFieldManipulation = HttpHeaderFieldManipulation(ooni.mkOptions)
+  ooni.init(httpHeaderFieldManipulation)
 
-  webConnectivity.on('begin', () => ooni.onProgress(0.0, 'starting web-connectivity'))
-  webConnectivity.on('progress', (percent, message) => {
+  httpHeaderFieldManipulation.on('begin', () => ooni.onProgress(0.0, 'starting http-header-field-manipulation'))
+  httpHeaderFieldManipulation.on('progress', (percent, message) => {
     ooni.onProgress(percent, message, persist)
   })
-  return ooni.run(webConnectivity.run)
+  return ooni.run(httpHeaderFieldManipulation.run)
 }

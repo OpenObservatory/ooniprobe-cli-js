@@ -55,7 +55,7 @@ import labelValue from './label-value'
 */
 
 const testResults = async (results, getMeta) => {
-  const colWidth = 50
+  const colWidth = 76
   let o = '┏' + '━'.repeat(colWidth) + '┓\n'
   let totalDataUsage = 0
   let totalRows = 0
@@ -85,17 +85,17 @@ const testResults = async (results, getMeta) => {
     let firstRow = `${chalk.bold(`#${r.id}`)} - ${moment(meta.date).fromNow()}`
     firstRow += rightPad(firstRow, innerWidth)
     let secondRow = meta.name
-    secondRow += rightPad(secondRow, 26)
+    secondRow += rightPad(secondRow, colWidth/2)
     secondRow += meta.summary[0] || ''
     secondRow += rightPad(secondRow, innerWidth)
 
     let thirdRow = meta.network
-    thirdRow += rightPad(thirdRow, 26)
+    thirdRow += rightPad(thirdRow, colWidth/2)
     thirdRow += meta.summary[1] || ''
     thirdRow += rightPad(thirdRow, innerWidth)
 
     let fourthRow = `${chalk.cyan(meta.asn)} (${chalk.cyan(meta.country)})`
-    fourthRow += rightPad(fourthRow, 26)
+    fourthRow += rightPad(fourthRow, colWidth/2)
     fourthRow += meta.summary[2] || ''
     fourthRow += rightPad(fourthRow, innerWidth)
 

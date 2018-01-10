@@ -20,9 +20,9 @@ export const renderSummary = (measurements, {React, Cli, Components, chalk}) => 
     }
 
     if (summary.registrationServerBlocked === true) {
-      Cli.log(Cli.output.notok('Whatapp registration server is blocked'))
+      Cli.log(Cli.output.notok('Registration server is blocked'))
     } else {
-      Cli.log(Cli.output.ok('Whatapp registration server is not blocked'))
+      Cli.log(Cli.output.ok('Registration server is not blocked'))
     }
   } else if (React) {
     // XXX this is broken currently as it depends on react

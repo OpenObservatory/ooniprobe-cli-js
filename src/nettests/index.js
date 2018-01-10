@@ -240,12 +240,32 @@ export const nettestTypes = {
     help: 'No help for you',
     makeSummary: (measurements) => {
       return {
-        facebookMessengerBlocked: true,
-        whatsappBlocked: true,
-        telegramBlocked: true,
+        whatsappBlocked: (measurements[0].summary.whatsappEndpointsBlocked ||
+                          measurements[0].summary.whatsappWebBlocked ||
+                          measurements[0].summary.registrationServerBlocked),
+        facebookMessengerBlocked: (measurements[1].summary.facebookTcpBlocking ||
+                                   measurements[1].summary.facebookDnsBlocking),
+        telegramBlocked: (measurements[2].summary.telegramWebBlocked ||
+                          measurements[2].summary.telegramHttpBlocked ||
+                          measurements[2].summary.telegramTcpBlocked)
       }
     },
-    renderSummary: (measurement, {Cli, chalk}) => {
+    renderSummary: (result, {Cli, chalk}) => {
+      if (result.summary.whatsappBlocked === true) {
+        Cli.log(Cli.output.notok('WhatsApp NOT ok'))
+      } else {
+        Cli.log(Cli.output.ok('WhatsApp is OK'))
+      }
+      if (result.summary.facebookMessengerBlocked === true) {
+        Cli.log(Cli.output.notok('Facebook NOT ok'))
+      } else {
+        Cli.log(Cli.output.ok('Facebook is OK'))
+      }
+      if (result.summary.telegramBlocked === true) {
+        Cli.log(Cli.output.ok('Telegram NOT ok'))
+      } else {
+        Cli.log(Cli.output.ok('Telegram is OK'))
+      }
     }
   },
   circumvention: {

@@ -92,10 +92,12 @@ const run = async ({camelName, argv}) => {
   const measurements = await result.getMeasurements()
   debug('updating the result table')
   debug(measurements)
+  const summary = nettestType.makeSummary(measurements)
+  debug('summary: ', summary)
   await result.update({
-    summary: nettestType.makeSummary(measurements),
     endTime: moment.utc().toDate(),
-    done: true
+    done: true,
+    summary
   })
 }
 

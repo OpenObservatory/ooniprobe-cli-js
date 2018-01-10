@@ -87,7 +87,9 @@ const listAction = async ctx => {
         summary.push(m)
       })
       // XXX we should figure out how this will work when we have many measurements
-      nettest.renderSummary([measurement], {Cli, chalk})
+      if (measurement.summary) {
+        nettest.renderSummary([measurement], {Cli, chalk})
+      }
       return {
         name: measurement.name,
         network: measurement.asn,

@@ -81,6 +81,9 @@ export const makeOoni = (loader, geoip) => {
           uploaded = false
           reportId = `LOCAL-${entry.id}`
         }
+        debug('generating summary for ' + reportFile)
+        const summary = loader.nettest.makeSummary(entry)
+        debug('generated summary: ', summary)
         let measurement = Measurement.build({
           state: 'active',
           reportId: reportId,
@@ -92,7 +95,7 @@ export const makeOoni = (loader, geoip) => {
           reportFile: reportFile,
           // We append the Z to make moment understand it's UTC
           startTime: moment(entry['measurement_start_time'] + 'Z').toDate(),
-          summary: loader.nettest.makeSummary(entry)
+          summary
         })
         dbOperations.push(measurement.save())
         measurements.push(measurement)
@@ -224,10 +227,17 @@ export const nettestTypes = {
     help: 'No help for you',
     makeSummary: (measurements) => {
       return {
-        foundMiddlebox: true
+        foundMiddlebox: (measurements[0].summary.foundMiddlebox ||
+                         measurements[1].summary.foundMiddlebox)
       }
     },
-    renderSummary: (measurement, {Cli, chalk}) => {}
+    renderSummary: (result, {Cli, chalk}) => {
+      if (result.summary.foundMiddlebox === true) {
+        Cli.log(Cli.output.notok('Found Middle Box'))
+      } else {
+        Cli.log(Cli.output.ok('No Middle Box'))
+      }
+    }
   },
   imBlocking: {
     nettests: [

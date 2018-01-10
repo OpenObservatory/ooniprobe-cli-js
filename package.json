@@ -49,9 +49,11 @@
     "webpack": "^3.6.0",
     "webpack-node-externals": "^1.6.0",
     "window-size": "^1.1.0",
-    "wrap-ansi": "^3.0.1"
+    "wrap-ansi": "^3.0.1",
+    "zlib": "^1.0.5"
   },
   "dependencies": {
+    "axios": "^0.17.1",
     "measurement-kit": "^0.1.0-alpha.6"
   }
 }

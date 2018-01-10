@@ -1,0 +1,9 @@
+
+{
+  "name": "ooni-dash",
+  "version": "0.3.0",
+  "description": "Official OONI test for running Dash",
+  "dependencies": {
+    "measurement-kit": "0.1.0"
+  }
+}

@@ -20,6 +20,8 @@ import {
 
 import makeCli from '../cli/make-cli'
 
+import { getGeoipPaths } from '../config/geoip'
+
 const debug = require('debug')('commands.run')
 
 const help = () => {
@@ -70,26 +72,45 @@ const run = async ({camelName, argv}) => {
               chalk.bold(`${nettestType.nettests.length} ${nettestType.name} `) +
               `test${sOrNot}`))
 
+  let dataUsageUp = 0
+  let dataUsageDown = 0
+  const geoip = await getGeoipPaths()
+
   for (const nettestLoader of nettestType.nettests) {
     const loader = nettestLoader()
     const { nettest, meta } = loader
     console.log(info(`${chalk.bold(meta.name)}`))
-    const measurements = await nettest.run({ooni: makeOoni(loader), argv})
+    const [measurements, dataUsage] = await nettest.run({
+      ooni: makeOoni(loader, geoip),
+      argv
+    })
+    debug('setting data usage', dataUsage)
+    dataUsageUp += dataUsage.up || 0
+    dataUsageDown += dataUsage.down || 0
     nettest.renderSummary(measurements, {
       Cli: makeCli(),
       chalk: chalk,
       Components: null,
       React: null,
     })
-    dbOperations.push(result.setMeasurements(measurements))
+
+    for (const measurement of measurements) {
+      dbOperations.push(result.addMeasurements(measurement))
+    }
   }
   await Promise.all(dbOperations)
 
   const measurements = await result.getMeasurements()
+  debug('updating the result table')
+  debug(measurements)
+  const summary = nettestType.makeSummary(measurements)
+  debug('summary: ', summary)
   await result.update({
-    summary: nettestType.makeSummary(measurements),
     endTime: moment.utc().toDate(),
-    done: true
+    done: true,
+    dataUsageUp: dataUsageUp,
+    dataUsageDown: dataUsageDown,
+    summary
   })
 }
 

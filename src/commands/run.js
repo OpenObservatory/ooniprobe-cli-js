@@ -78,18 +78,20 @@ const run = async ({camelName, argv}) => {
     const loader = nettestLoader()
     const { nettest, meta } = loader
     console.log(info(`${chalk.bold(meta.name)}`))
-    const measurements = await nettest.run({ooni: makeOoni(loader, geoip), argv})
-    nettest.renderSummary(measurements, {
+    const measurement = await nettest.run({ooni: makeOoni(loader, geoip), argv})
+    nettest.renderSummary(measurement, {
       Cli: makeCli(),
       chalk: chalk,
       Components: null,
       React: null,
     })
-    dbOperations.push(result.setMeasurements(measurements))
+    dbOperations.push(result.addMeasurements(measurement))
   }
   await Promise.all(dbOperations)
 
   const measurements = await result.getMeasurements()
+  debug('updating the result table')
+  debug(measurements)
   await result.update({
     summary: nettestType.makeSummary(measurements),
     endTime: moment.utc().toDate(),

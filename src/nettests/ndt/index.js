@@ -49,9 +49,11 @@ export const run = ({ooni, argv}) => {
 
   ndt.on('begin', () => ooni.onProgress(0.0, 'starting ndt'))
   ndt.on('progress', (percent, message) => {
-    const persist = (message.startsWith('upload-speed') ||
+    /*
+      const persist = (message.startsWith('upload-speed') ||
                      message.startsWith('download-speed'))
-    ooni.onProgress(percent, message, persist)
+    */
+    ooni.onProgress(percent, message)
   })
   return ooni.run(ndt.run)
 }

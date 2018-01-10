@@ -95,7 +95,6 @@ const listAction = async ctx => {
         network: measurement.asn,
         asn: measurement.asn,
         country: measurement.country,
-        dataUsage: measurement.dataUsage,
         date: measurement.startTime,
         summary: summary
       }
@@ -120,7 +119,8 @@ const listAction = async ctx => {
         network: measurements[0].asn,
         asn: measurements[0].asn,
         country: measurements[0].country,
-        dataUsage: measurements.map(m => m.dataUsage).reduce((a,b) => a += b),
+        dataUsageUp: result.dataUsageUp,
+        dataUsageDown: result.dataUsageDown,
         date: result.startTime,
         summary: summary
       }

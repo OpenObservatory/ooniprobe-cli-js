@@ -72,20 +72,31 @@ const run = async ({camelName, argv}) => {
               chalk.bold(`${nettestType.nettests.length} ${nettestType.name} `) +
               `test${sOrNot}`))
 
+  let dataUsageUp = 0
+  let dataUsageDown = 0
   const geoip = await getGeoipPaths()
 
   for (const nettestLoader of nettestType.nettests) {
     const loader = nettestLoader()
     const { nettest, meta } = loader
     console.log(info(`${chalk.bold(meta.name)}`))
-    const measurement = await nettest.run({ooni: makeOoni(loader, geoip), argv})
-    nettest.renderSummary(measurement, {
+    const [measurements, dataUsage] = await nettest.run({
+      ooni: makeOoni(loader, geoip),
+      argv
+    })
+    debug('setting data usage', dataUsage)
+    dataUsageUp += dataUsage.up || 0
+    dataUsageDown += dataUsage.down || 0
+    nettest.renderSummary(measurements, {
       Cli: makeCli(),
       chalk: chalk,
       Components: null,
       React: null,
     })
-    dbOperations.push(result.addMeasurements(measurement))
+
+    for (const measurement of measurements) {
+      dbOperations.push(result.addMeasurements(measurement))
+    }
   }
   await Promise.all(dbOperations)
 
@@ -97,6 +108,8 @@ const run = async ({camelName, argv}) => {
   await result.update({
     endTime: moment.utc().toDate(),
     done: true,
+    dataUsageUp: dataUsageUp,
+    dataUsageDown: dataUsageDown,
     summary
   })
 }

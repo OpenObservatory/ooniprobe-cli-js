@@ -31,6 +31,10 @@ export const makeOoni = (loader, geoip) => {
       progress = null,
       reportId = null,
       reportFile = null,
+      dataUsage = {
+        up: 0,
+        down: 0
+      },
       measurementName = camelCase(loader.meta.name),
       uploaded = false,
       localReportId = null,
@@ -69,6 +73,10 @@ export const makeOoni = (loader, geoip) => {
       nt.on('end', () => {
         debug('ending test')
       })
+      nt.on('overall-data-usage', ({down, up}) => {
+        dataUsage.up = up
+        dataUsage.down = down
+      })
       nt.on('entry', entry => {
         // XXX This is a bit of a hack
         // When we don't have a reportId with the collector we set the
@@ -83,6 +91,8 @@ export const makeOoni = (loader, geoip) => {
         }
         debug('generating summary for ' + reportFile)
         const summary = loader.nettest.makeSummary(entry)
+        const startTime = moment(entry['measurement_start_time'] + 'Z').toDate()
+        const endTime = new Date(startTime.getTime() + entry['test_runtime'] * 1000)
         debug('generated summary: ', summary)
         let measurement = Measurement.build({
           state: 'active',
@@ -94,7 +104,8 @@ export const makeOoni = (loader, geoip) => {
           name: measurementName,
           reportFile: reportFile,
           // We append the Z to make moment understand it's UTC
-          startTime: moment(entry['measurement_start_time'] + 'Z').toDate(),
+          startTime,
+          endTime,
           summary
         })
         dbOperations.push(measurement.save())
@@ -108,31 +119,26 @@ export const makeOoni = (loader, geoip) => {
     progress = wait(`${percentage(percent)}: ${message}`, persist)
   }
 
-  const setSummary = (measurementId, summary) => {
-  }
-
   const run = async (runner) => {
     await runner()
 
     // XXX Here I make the assumption that either it all failed or not.
     // This is a lie.
+    // The endTime is also not correct
     for (const measurement of measurements) {
       dbOperations.push(measurement.update({
-        state: uploaded ? 'uploaded' : 'done',
-        endTime: moment().utc().toDate(),
-        dataUsage: 1024**2*randInt(1, 20) // XXX we currently fill this with some random data
+        state: uploaded ? 'uploaded' : 'done'
       }))
     }
 
     await Promise.all(dbOperations)
     progress && progress()
-    return measurements
+    return [measurements, dataUsage]
   }
 
   return {
     init,
     onProgress,
-    setSummary,
     mkOptions,
     run
   }

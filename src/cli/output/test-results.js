@@ -57,7 +57,8 @@ import labelValue from './label-value'
 const testResults = async (results, getMeta) => {
   const colWidth = 76
   let o = '┏' + '━'.repeat(colWidth) + '┓\n'
-  let totalDataUsage = 0
+  let totalDataUsageUp = 0
+  let totalDataUsageDown = 0
   let totalRows = 0
   let allAsns = []
   let allCountries = []
@@ -79,7 +80,10 @@ const testResults = async (results, getMeta) => {
     if (allAsns.indexOf(meta.asn) === -1) {
       allAsns.push(meta.asn)
     }
-    totalDataUsage += meta.dataUsage
+    if (meta.dataUsageUp && meta.dataUsageDown) {
+      totalDataUsageUp += meta.dataUsageUp
+      totalDataUsageDown += meta.dataUsageDown
+    }
     totalRows += 1
 
     let firstRow = `${chalk.bold(`#${r.id}`)} - ${moment(meta.date).fromNow()}`
@@ -110,8 +114,11 @@ const testResults = async (results, getMeta) => {
     results.map(getContentRow)
   )
 
-  let dataUsageCell = `${humanize.filesize(totalDataUsage)}`
-  dataUsageCell += rightPad(dataUsageCell, 12)
+  let dataUsageDownCell = `U ${humanize.filesize(totalDataUsageDown)}`
+  dataUsageDownCell += rightPad(dataUsageDownCell, 12)
+
+  let dataUsageUpCell = `D ${humanize.filesize(totalDataUsageUp)}`
+  dataUsageUpCell += rightPad(dataUsageUpCell, 12)
 
   let networksCell = `${allAsns.length} nets`
   networksCell += rightPad(networksCell, 12)
@@ -120,10 +127,16 @@ const testResults = async (results, getMeta) => {
   msmtsCell += rightPad(msmtsCell, 12)
 
   o += contentRows.join('┢' + '━'.repeat(colWidth) + '┪\n')
-  o += '└┬──────────────┬──────────────┬──────────────┬'+'─'.repeat(colWidth - 46)+'┘\n'
-  o += ` │ ${msmtsCell} │ ${networksCell} │ ${dataUsageCell} │
- ╰──────────────┴──────────────┴──────────────╯
-`
+
+  if (totalDataUsageDown && totalDataUsageUp) {
+    o += '└┬──────────────┬──────────────┬──────────────┬──────────────┬'+'─'.repeat(colWidth - 61)+'┘\n'
+    o += ` │ ${msmtsCell} │ ${networksCell} │ ${dataUsageDownCell} │ ${dataUsageUpCell} │\n`
+    o += ' ╰──────────────┴──────────────┴──────────────┴──────────────╯'
+  } else {
+    o += '└┬──────────────┬──────────────┬'+'─'.repeat(colWidth - 31)+'┘\n'
+    o += ` │ ${msmtsCell} │ ${networksCell} │\n`
+    o += ' ╰──────────────┴──────────────╯'
+  }
   return o
 }
 

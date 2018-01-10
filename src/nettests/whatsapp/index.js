@@ -7,23 +7,25 @@ export const renderSummary = (measurements, {React, Cli, Components, chalk}) => 
   // When this function is called from the Cli the Cli will be set, when it's
   // called from the Desktop app we have React set instead.
   if (Cli) {
-    Cli.log(Cli.output.labelValue('Label', uploadMbit, {unit: 'Mbit'}))
-  } else if (React) {
-    /*
-    XXX this is broken currently as it depends on react
-    const {
-      Container,
-      Heading
-    } = Components
-    return class extends React.Component {
-      render() {
-        return <Container>
-          <Heading h={1}>Results for NDT</Heading>
-          {uploadMbit}
-        </Container>
-      }
+    if (summary.whatsappEndpointsBlocked === true) {
+      Cli.log(Cli.output.notok('Whatapp is blocked'))
+    } else {
+      Cli.log(Cli.output.ok('Whatapp is not blocked'))
     }
-    */
+
+    if (summary.whatsappWebBlocked === true) {
+      Cli.log(Cli.output.notok('Whatapp Web is blocked'))
+    } else {
+      Cli.log(Cli.output.ok('Whatapp Web is not blocked'))
+    }
+
+    if (summary.registrationServerBlocked === true) {
+      Cli.log(Cli.output.notok('Whatapp registration server is blocked'))
+    } else {
+      Cli.log(Cli.output.ok('Whatapp registration server is not blocked'))
+    }
+  } else if (React) {
+    // XXX this is broken currently as it depends on react
   }
 }
 
@@ -31,6 +33,9 @@ export const renderHelp = () => {
 }
 
 export const makeSummary = ({test_keys}) => ({
+  whatsappEndpointsBlocked: test_keys.whatsapp_endpoints_status === 'blocked',
+  whatsappWebBlocked: test_keys.whatsapp_web_status === 'blocked',
+  registrationServerBlocked: test_keys.registration_server_status === 'blocked'
 })
 
 export const run = ({ooni, argv}) => {
@@ -39,7 +44,7 @@ export const run = ({ooni, argv}) => {
 
   whatsapp.on('begin', () => ooni.onProgress(0.0, 'starting whatsapp'))
   whatsapp.on('progress', (percent, message) => {
-    ooni.onProgress(percent, message, persist)
+    ooni.onProgress(percent, message)
   })
   return ooni.run(whatsapp.run)
 }

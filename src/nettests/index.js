@@ -24,7 +24,7 @@ const makeReportFile = (name) => {
   )
 }
 
-export const makeOoni = (loader) => {
+export const makeOoni = (loader, geoip) => {
   let dbOperations = [],
       measurements = [],
       mkOptions = {},
@@ -50,6 +50,10 @@ export const makeOoni = (loader) => {
     if (isMk) {
       nt.test.set_options('no_file_report', '0')
       nt.test.set_output_filepath(reportFile)
+      nt.setOptions({
+        geoipCountryPath: geoip.countryPath,
+        geoipAsnPath: geoip.asnPath
+      })
       nt.on('log', (severity, message) => {
         debug('<'+severity+'>'+message)
         // XXX this a workaround due to a bug in MK
@@ -148,14 +152,12 @@ export const nettests = {
   httpInvalidRequestLine: makeNettestLoader('http-invalid-request-line'),
   httpHeaderFieldManipulation: makeNettestLoader('http-header-field-manipulation'),
   ndt: makeNettestLoader('ndt'),
-
-  // Missing wrapper
   dash: makeNettestLoader('dash'),
   facebookMessenger: makeNettestLoader('facebook-messenger'),
   telegram: makeNettestLoader('telegram'),
+  whatsapp: makeNettestLoader('whatsapp'),
 
   // These don't exist in MK
-  whatsapp: makeNettestLoader('whatsapp'),
   captivePortal: makeNettestLoader('captive-portal'),
   httpHost: makeNettestLoader('http-host'),
   traceroute: makeNettestLoader('traceroute'),
@@ -217,11 +219,13 @@ export const nettestTypes = {
       nettests.httpInvalidRequestLine,
       nettests.httpHeaderFieldManipulation
     ],
-    name: 'Middleboxes',
-    shortDescription: 'Detect the presence of "Middle boxes"',
+    name: 'Middle Boxes',
+    shortDescription: 'Detect the presence of Middle Boxes',
     help: 'No help for you',
     makeSummary: (measurements) => {
-      return {}
+      return {
+        foundMiddlebox: true
+      }
     },
     renderSummary: (measurement, {Cli, chalk}) => {}
   },
@@ -235,9 +239,14 @@ export const nettestTypes = {
     shortDescription: 'Check if Instant Messagging apps are blocked.',
     help: 'No help for you',
     makeSummary: (measurements) => {
-      return {}
+      return {
+        facebookMessengerBlocked: true,
+        whatsappBlocked: true,
+        telegramBlocked: true,
+      }
     },
-    renderSummary: (measurement, {Cli, chalk}) => {}
+    renderSummary: (measurement, {Cli, chalk}) => {
+    }
   },
   circumvention: {
     nettests: [

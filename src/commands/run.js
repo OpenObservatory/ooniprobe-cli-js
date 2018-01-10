@@ -20,6 +20,8 @@ import {
 
 import makeCli from '../cli/make-cli'
 
+import { getGeoipPaths } from '../config/geoip'
+
 const debug = require('debug')('commands.run')
 
 const help = () => {
@@ -70,11 +72,13 @@ const run = async ({camelName, argv}) => {
               chalk.bold(`${nettestType.nettests.length} ${nettestType.name} `) +
               `test${sOrNot}`))
 
+  const geoip = await getGeoipPaths()
+
   for (const nettestLoader of nettestType.nettests) {
     const loader = nettestLoader()
     const { nettest, meta } = loader
     console.log(info(`${chalk.bold(meta.name)}`))
-    const measurements = await nettest.run({ooni: makeOoni(loader), argv})
+    const measurements = await nettest.run({ooni: makeOoni(loader, geoip), argv})
     nettest.renderSummary(measurements, {
       Cli: makeCli(),
       chalk: chalk,

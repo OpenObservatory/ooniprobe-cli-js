@@ -167,6 +167,7 @@ const main = async ctx => {
       await exit(0)
     } else {
       await run({camelName, argv})
+      await exit(0)
     }
   } catch(err) {
     if (err.usageError) {

@@ -16,7 +16,7 @@ const listenForMessages = () => {
   })
 }
 
-export const notify = ({key, value}) => {
+export const notify = ({key, value}) =>{
   if (ipcEnabled === true && process.send) {
     process.send({
       key,

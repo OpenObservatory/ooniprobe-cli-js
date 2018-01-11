@@ -18,17 +18,20 @@ import {
 
 import { enableIpc } from './config/ipc'
 
+const debug = require('debug')('ooni')
+
 const OONI_DIR = getOoniDir()
 const OONI_CONFIG_PATH = getConfigFilePath()
 
 const main = async (argv_) => {
   const argv = mri(argv_, {
-    boolean: ['help', 'version', 'verbose'],
+    boolean: ['help', 'version', 'verbose', 'ipc'],
     string: [],
     alias: {
       help: 'h'
     }
   })
+  debug(argv)
 
   let subcommand = argv._[2]
 
@@ -134,9 +137,9 @@ const main = async (argv_) => {
     }
   }
 
-  let ipc
   if (argv.ipc) {
     try {
+      debug('enabling IPC')
       enableIpc()
     } catch(err) {
       console.error(error('An error occurred while starting IPC subsystem ' +
@@ -147,7 +150,7 @@ const main = async (argv_) => {
   }
 
   const ctx = {
-    argv: argv_
+    argv: argv._
   }
 
   if (subcommand === 'help' && argv._[3]) {

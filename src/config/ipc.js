@@ -1,3 +1,5 @@
+const process = require('process')
+
 let ipcEnabled = false
 
 export const enableIpc = () => {
@@ -15,7 +17,7 @@ const listenForMessages = () => {
 }
 
 export const notify = ({key, value}) => {
-  if (ipcEnabled === true) {
+  if (ipcEnabled === true && process.send) {
     process.send({
       key,
       value

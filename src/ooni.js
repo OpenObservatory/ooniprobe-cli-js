@@ -16,8 +16,7 @@ import {
   writeToConfigFile
 } from './config/config-files'
 
-import configIpc from './ipc/config'
-import startIpc from './ipc/start'
+import { enableIpc } from './config/ipc'
 
 const OONI_DIR = getOoniDir()
 const OONI_CONFIG_PATH = getConfigFilePath()
@@ -138,10 +137,7 @@ const main = async (argv_) => {
   let ipc
   if (argv.ipc) {
     try {
-      ipc = await configIpc(argv.ipc)
-      // XXX do we maybe want to have an CLI option to have the process wait
-      // until the consumer connects to the IPC subsystem?
-      await startIpc(ipc)
+      enableIpc()
     } catch(err) {
       console.error(error('An error occurred while starting IPC subsystem ' +
         `ooni config file in "${OONI_CONFIG_PATH}"` + err.message
@@ -151,8 +147,7 @@ const main = async (argv_) => {
   }
 
   const ctx = {
-    argv: argv_,
-    ipc
+    argv: argv_
   }
 
   if (subcommand === 'help' && argv._[3]) {

@@ -18,6 +18,10 @@ import {
   Result
 } from '../config/db'
 
+import {
+  notify
+} from '../config/ipc'
+
 import makeCli from '../cli/make-cli'
 
 import { getGeoipPaths } from '../config/geoip'
@@ -67,6 +71,8 @@ const run = async ({camelName, argv}) => {
     done: false
   })
   dbOperations.push(result.save())
+
+  notify({key: 'starting-test', value: camelName})
 
   console.log(info('Running '+
               chalk.bold(`${nettestType.nettests.length} ${nettestType.name} `) +

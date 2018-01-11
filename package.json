@@ -6,18 +6,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "webpack -w",
-    "pack": "webpack && pkg dist/ooni.js -c package.json -o packed/ooni",
+    "pack": "webpack && node pack.js",
     "clean-home": "rm -rf ~/.ooni/measurements && rm -rf ~/.ooni/*.ldb"
-  },
-  "pkg": {
-    "scripts": [
-      "dist/*"
-    ],
-    "targets": [
-      "node7-linux-x64",
-      "node7-macos-x64",
-      "node7-win-x64"
-    ]
   },
   "devDependencies": {
     "ansi-escapes": "^3.0.0",

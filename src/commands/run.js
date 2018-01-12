@@ -72,8 +72,7 @@ const run = async ({camelName, argv}) => {
   })
   dbOperations.push(result.save())
 
-  notify({key: 'starting-test', value: camelName})
-
+  notify({key: 'ooni.run.nettest.starting', value: camelName})
   console.log(info('Running '+
               chalk.bold(`${nettestType.nettests.length} ${nettestType.name} `) +
               `test${sOrNot}`))
@@ -85,6 +84,7 @@ const run = async ({camelName, argv}) => {
   for (const nettestLoader of nettestType.nettests) {
     const loader = nettestLoader()
     const { nettest, meta } = loader
+    notify({key: 'ooni.run.nettest.running', value: meta})
     console.log(info(`${chalk.bold(meta.name)}`))
     const [measurements, dataUsage] = await nettest.run({
       ooni: makeOoni(loader, geoip),

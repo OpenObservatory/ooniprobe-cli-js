@@ -8,12 +8,12 @@ import wait from '../cli/output/wait'
 
 import { Measurement } from '../config/db'
 import { getOoniDir } from '../config/global-path'
+import { notify } from '../config/ipc'
 
 import iso8601 from '../util/iso8601'
 import randInt from '../util/randInt'
 
 const debug = require('debug')('nettests.index')
-
 const OONI_DIR = getOoniDir()
 
 const makeReportFile = (name) => {
@@ -117,6 +117,8 @@ export const makeOoni = (loader, geoip) => {
   const onProgress = (percent, message, persist) => {
     progress && progress()
     progress = wait(`${percentage(percent)}: ${message}`, persist)
+    notify({key: 'ooni.run.progress.percent', value: percent})
+    notify({key: 'ooni.run.progress.message', value: message})
   }
 
   const run = async (runner) => {

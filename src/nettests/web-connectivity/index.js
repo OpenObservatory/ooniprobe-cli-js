@@ -39,7 +39,7 @@ export const run = ({ooni, argv}) => {
 
   webConnectivity.on('begin', () => ooni.onProgress(0.0, 'starting web-connectivity'))
   webConnectivity.on('progress', (percent, message) => {
-    ooni.onProgress(percent, message, persist)
+    ooni.onProgress(percent, message)
   })
   return ooni.run(webConnectivity.run)
 }

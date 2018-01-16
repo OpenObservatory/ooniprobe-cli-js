@@ -8,12 +8,12 @@ import wait from '../cli/output/wait'
 
 import { Measurement } from '../config/db'
 import { getOoniDir } from '../config/global-path'
+import { notify } from '../config/ipc'
 
 import iso8601 from '../util/iso8601'
 import randInt from '../util/randInt'
 
 const debug = require('debug')('nettests.index')
-
 const OONI_DIR = getOoniDir()
 
 const makeReportFile = (name) => {
@@ -24,13 +24,17 @@ const makeReportFile = (name) => {
   )
 }
 
-export const makeOoni = (loader) => {
+export const makeOoni = (loader, geoip) => {
   let dbOperations = [],
       measurements = [],
       mkOptions = {},
       progress = null,
       reportId = null,
       reportFile = null,
+      dataUsage = {
+        up: 0,
+        down: 0
+      },
       measurementName = camelCase(loader.meta.name),
       uploaded = false,
       localReportId = null,
@@ -50,6 +54,10 @@ export const makeOoni = (loader) => {
     if (isMk) {
       nt.test.set_options('no_file_report', '0')
       nt.test.set_output_filepath(reportFile)
+      nt.setOptions({
+        geoipCountryPath: geoip.countryPath,
+        geoipAsnPath: geoip.asnPath
+      })
       nt.on('log', (severity, message) => {
         debug('<'+severity+'>'+message)
         // XXX this a workaround due to a bug in MK
@@ -65,6 +73,10 @@ export const makeOoni = (loader) => {
       nt.on('end', () => {
         debug('ending test')
       })
+      nt.on('overall-data-usage', ({down, up}) => {
+        dataUsage.up = up
+        dataUsage.down = down
+      })
       nt.on('entry', entry => {
         // XXX This is a bit of a hack
         // When we don't have a reportId with the collector we set the
@@ -77,6 +89,11 @@ export const makeOoni = (loader) => {
           uploaded = false
           reportId = `LOCAL-${entry.id}`
         }
+        debug('generating summary for ' + reportFile)
+        const summary = loader.nettest.makeSummary(entry)
+        const startTime = moment(entry['measurement_start_time'] + 'Z').toDate()
+        const endTime = new Date(startTime.getTime() + entry['test_runtime'] * 1000)
+        debug('generated summary: ', summary)
         let measurement = Measurement.build({
           state: 'active',
           reportId: reportId,
@@ -87,8 +104,9 @@ export const makeOoni = (loader) => {
           name: measurementName,
           reportFile: reportFile,
           // We append the Z to make moment understand it's UTC
-          startTime: moment(entry['measurement_start_time'] + 'Z').toDate(),
-          summary: loader.nettest.makeSummary(entry)
+          startTime,
+          endTime,
+          summary
         })
         dbOperations.push(measurement.save())
         measurements.push(measurement)
@@ -99,9 +117,8 @@ export const makeOoni = (loader) => {
   const onProgress = (percent, message, persist) => {
     progress && progress()
     progress = wait(`${percentage(percent)}: ${message}`, persist)
-  }
-
-  const setSummary = (measurementId, summary) => {
+    notify({key: 'ooni.run.progress.percent', value: percent})
+    notify({key: 'ooni.run.progress.message', value: message})
   }
 
   const run = async (runner) => {
@@ -109,23 +126,21 @@ export const makeOoni = (loader) => {
 
     // XXX Here I make the assumption that either it all failed or not.
     // This is a lie.
+    // The endTime is also not correct
     for (const measurement of measurements) {
       dbOperations.push(measurement.update({
-        state: uploaded ? 'uploaded' : 'done',
-        endTime: moment().utc().toDate(),
-        dataUsage: 1024**2*randInt(1, 20) // XXX we currently fill this with some random data
+        state: uploaded ? 'uploaded' : 'done'
       }))
     }
 
     await Promise.all(dbOperations)
     progress && progress()
-    return measurements
+    return [measurements, dataUsage]
   }
 
   return {
     init,
     onProgress,
-    setSummary,
     mkOptions,
     run
   }
@@ -148,14 +163,12 @@ export const nettests = {
   httpInvalidRequestLine: makeNettestLoader('http-invalid-request-line'),
   httpHeaderFieldManipulation: makeNettestLoader('http-header-field-manipulation'),
   ndt: makeNettestLoader('ndt'),
-
-  // Missing wrapper
   dash: makeNettestLoader('dash'),
   facebookMessenger: makeNettestLoader('facebook-messenger'),
   telegram: makeNettestLoader('telegram'),
+  whatsapp: makeNettestLoader('whatsapp'),
 
   // These don't exist in MK
-  whatsapp: makeNettestLoader('whatsapp'),
   captivePortal: makeNettestLoader('captive-portal'),
   httpHost: makeNettestLoader('http-host'),
   traceroute: makeNettestLoader('traceroute'),
@@ -217,13 +230,22 @@ export const nettestTypes = {
       nettests.httpInvalidRequestLine,
       nettests.httpHeaderFieldManipulation
     ],
-    name: 'Middleboxes',
-    shortDescription: 'Detect the presence of "Middle boxes"',
+    name: 'Middle Boxes',
+    shortDescription: 'Detect the presence of Middle Boxes',
     help: 'No help for you',
     makeSummary: (measurements) => {
-      return {}
+      return {
+        foundMiddlebox: (measurements[0].summary.foundMiddlebox ||
+                         measurements[1].summary.foundMiddlebox)
+      }
     },
-    renderSummary: (measurement, {Cli, chalk}) => {}
+    renderSummary: (result, {Cli, chalk}) => {
+      if (result.summary.foundMiddlebox === true) {
+        Cli.log(Cli.output.notok('Found Middle Box'))
+      } else {
+        Cli.log(Cli.output.ok('No Middle Box'))
+      }
+    }
   },
   imBlocking: {
     nettests: [
@@ -235,9 +257,34 @@ export const nettestTypes = {
     shortDescription: 'Check if Instant Messagging apps are blocked.',
     help: 'No help for you',
     makeSummary: (measurements) => {
-      return {}
+      return {
+        whatsappBlocked: (measurements[0].summary.whatsappEndpointsBlocked ||
+                          measurements[0].summary.whatsappWebBlocked ||
+                          measurements[0].summary.registrationServerBlocked),
+        facebookMessengerBlocked: (measurements[1].summary.facebookTcpBlocking ||
+                                   measurements[1].summary.facebookDnsBlocking),
+        telegramBlocked: (measurements[2].summary.telegramWebBlocked ||
+                          measurements[2].summary.telegramHttpBlocked ||
+                          measurements[2].summary.telegramTcpBlocked)
+      }
     },
-    renderSummary: (measurement, {Cli, chalk}) => {}
+    renderSummary: (result, {Cli, chalk}) => {
+      if (result.summary.whatsappBlocked === true) {
+        Cli.log(Cli.output.notok('WhatsApp NOT ok'))
+      } else {
+        Cli.log(Cli.output.ok('WhatsApp is OK'))
+      }
+      if (result.summary.facebookMessengerBlocked === true) {
+        Cli.log(Cli.output.notok('Facebook NOT ok'))
+      } else {
+        Cli.log(Cli.output.ok('Facebook is OK'))
+      }
+      if (result.summary.telegramBlocked === true) {
+        Cli.log(Cli.output.ok('Telegram NOT ok'))
+      } else {
+        Cli.log(Cli.output.ok('Telegram is OK'))
+      }
+    }
   },
   circumvention: {
     nettests: [

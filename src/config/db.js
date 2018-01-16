@@ -31,7 +31,6 @@ export const Measurement = sequelize.define('measurement', {
   name: Sequelize.STRING,
   startTime: Sequelize.DATE,
   endTime: Sequelize.DATE,
-  dataUsage: Sequelize.INTEGER,
   // This is an opaque JSON that is test dependent
   summary: Sequelize.JSON,
 
@@ -66,7 +65,9 @@ export const Result = sequelize.define('result', {
   startTime: Sequelize.DATE,
   endTime: Sequelize.DATE,
   summary: Sequelize.JSON,
-  done: Sequelize.BOOLEAN
+  done: Sequelize.BOOLEAN,
+  dataUsageUp: Sequelize.INTEGER,
+  dataUsageDown: Sequelize.INTEGER
 })
 Result.hasMany(Measurement, { as: 'Measurements' })
 sequelize.sync()

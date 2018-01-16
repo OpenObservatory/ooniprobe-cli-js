@@ -118,7 +118,6 @@ const main = async ctx => {
     }
     await exit(1)
   }
-
 }
 
 export default main

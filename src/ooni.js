@@ -16,17 +16,22 @@ import {
   writeToConfigFile
 } from './config/config-files'
 
+import { enableIpc } from './config/ipc'
+
+const debug = require('debug')('ooni')
+
 const OONI_DIR = getOoniDir()
 const OONI_CONFIG_PATH = getConfigFilePath()
 
 const main = async (argv_) => {
   const argv = mri(argv_, {
-    boolean: ['help', 'version', 'verbose'],
+    boolean: ['help', 'version', 'verbose', 'ipc'],
     string: [],
     alias: {
       help: 'h'
     }
   })
+  debug(argv)
 
   let subcommand = argv._[2]
 
@@ -132,8 +137,20 @@ const main = async (argv_) => {
     }
   }
 
+  if (argv.ipc) {
+    try {
+      debug('enabling IPC')
+      enableIpc()
+    } catch(err) {
+      console.error(error('An error occurred while starting IPC subsystem ' +
+        `ooni config file in "${OONI_CONFIG_PATH}"` + err.message
+      ))
+      return 1
+    }
+  }
+
   const ctx = {
-    argv: argv_
+    argv: argv._
   }
 
   if (subcommand === 'help' && argv._[3]) {

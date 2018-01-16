@@ -1,0 +1,9 @@
+
+{
+  "name": "ooni-telegram",
+  "version": "0.3.0",
+  "description": "Official OONI test for running Telegram",
+  "dependencies": {
+    "measurement-kit": "0.1.0"
+  }
+}

@@ -23,21 +23,7 @@ export const renderSummary = (measurements, {React, Cli, Components, chalk}) => 
     Cli.log(Cli.output.labelValue('MSS', mss))
     Cli.log(Cli.output.labelValue('Timeouts', timeouts))
   } else if (React) {
-    /*
-    XXX this is broken currently as it depends on react
-    const {
-      Container,
-      Heading
-    } = Components
-    return class extends React.Component {
-      render() {
-        return <Container>
-          <Heading h={1}>Results for NDT</Heading>
-          {uploadMbit}
-        </Container>
-      }
-    }
-    */
+    // XXX this is broken currently as it depends on react
   }
 }
 
@@ -63,9 +49,11 @@ export const run = ({ooni, argv}) => {
 
   ndt.on('begin', () => ooni.onProgress(0.0, 'starting ndt'))
   ndt.on('progress', (percent, message) => {
-    const persist = !(message.startsWith('upload-speed') ||
-                      message.startsWith('download-speed'))
-    ooni.onProgress(percent, message, persist)
+    /*
+      const persist = (message.startsWith('upload-speed') ||
+                     message.startsWith('download-speed'))
+    */
+    ooni.onProgress(percent, message)
   })
   return ooni.run(ndt.run)
 }
